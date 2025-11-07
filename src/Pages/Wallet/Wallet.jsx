@@ -5,7 +5,7 @@ import { useAccount, useDisconnect, useConnect } from 'wagmi';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { ethers } from 'ethers';
 import './Wallet.css';
-import Menu from "../../assets/Menu/Menu";
+import Menu from "../../assets/Menus/Menu/Menu";
 import { walletService } from "./Components/Services/walletService";
 import { appKit } from "../../config/appkit-config";
 

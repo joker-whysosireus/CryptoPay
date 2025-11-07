@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import Loader from './assets/Loader/Loader.jsx';
 import History from './Pages/History/History.jsx';
 import Help from './Pages/Help/Help.jsx';
 import Wallet from './Pages/Wallet/Wallet.jsx';
@@ -12,6 +13,7 @@ const App = () => {
     const [isActive, setIsActive] = useState(false);
     const [userData, setUserData] = useState(null);
     const [telegramReady, setTelegramReady] = useState(false);
+    const [loading, setLoading] = useState(true); // Добавляем состояние загрузки
 
     // Initialize Telegram WebApp
     useEffect(() => {
@@ -121,13 +123,16 @@ const App = () => {
                             console.error("App.jsx: Authentication failed");
                             setUserData(null);
                         }
+                        setLoading(false); // Завершаем загрузку после получения ответа
                     })
                     .catch(error => {
                         console.error("App.jsx: Authentication error:", error);
                         setUserData(null);
+                        setLoading(false); // Завершаем загрузку даже при ошибке
                     });
             } else {
                 console.warn("App.jsx: No initData available");
+                setLoading(false); // Завершаем загрузку если нет initData
             }
         }
     }, [telegramReady]);
@@ -141,6 +146,11 @@ const App = () => {
             console.error('Error fetching user data:', error);
         }
     };
+
+    // Показываем Loader пока загружаются данные
+    if (loading) {
+        return <Loader />;
+    }
 
     return (
         <Routes location={location}>

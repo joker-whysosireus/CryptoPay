@@ -1,4 +1,4 @@
-import Menu from '../../assets/Menu/Menu';
+import Menu from "../../assets/Menus/Menu/Menu";
 import './Help.css';
 
 function Help() {
