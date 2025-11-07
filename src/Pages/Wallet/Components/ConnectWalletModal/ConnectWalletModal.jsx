@@ -10,7 +10,7 @@ const blockchainOptions = [
   { id: "bitcoin", name: "Bitcoin", symbol: "BTC", icon: "/btc.svg" },
 ];
 
-function ConnectWalletModal({ open, onOpenChange, onConnectWallet, connectedWallets }) {
+function ConnectWalletModal({ open, onOpenChange, onConnectWallet, connectedWallets, userData }) {
   if (!open) return null;
 
   const handleOverlayClick = (e) => {

@@ -5,7 +5,7 @@ import History from './Pages/History/History.jsx';
 import Help from './Pages/Help/Help.jsx';
 import Wallet from './Pages/Wallet/Wallet.jsx';
 
-const AUTH_FUNCTION_URL = 'https://ton-jacket-backend.netlify.app/.netlify/functions/auth';
+const AUTH_FUNCTION_URL = 'https://cryptopayappbackend.netlify.app/.netlify/functions/auth';
 
 const App = () => {
     const location = useLocation();
@@ -40,6 +40,12 @@ const App = () => {
                 // Установка цвета заголовка Telegram приложения
                 if (webApp.setHeaderColor) {
                     webApp.setHeaderColor('#1C1C1D');
+                }
+
+                // EXPAND - развернуть приложение на весь экран
+                if (webApp.expand) {
+                    webApp.expand();
+                    console.log("Telegram WebApp expanded to full screen");
                 }
                 
                 console.log("Telegram WebApp initialized successfully");

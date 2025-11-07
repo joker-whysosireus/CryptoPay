@@ -17,7 +17,7 @@ import WalletSelector from "./Components/WalletSelector/WalletSelector";
 import ConnectWalletModal from "./Components/ConnectWalletModal/ConnectWalletModal";
 import QRScanner from "./Components/QRScanner/QRScanner";
 
-function Wallet({ userData }) {
+function Wallet({ userData, updateUserData }) {
   const [showWalletSelector, setShowWalletSelector] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showConnectWallet, setShowConnectWallet] = useState(false);
@@ -146,12 +146,7 @@ function Wallet({ userData }) {
         case 'ton':
           tonConnectUI.disconnect();
           break;
-        case 'tron':
-          // Для Tron просто удаляем из хранилища
-          break;
-        case 'bitcoin':
-          // Для Bitcoin просто удаляем из хранилища
-          break;
+        // Tron и Bitcoin удаляются только из хранилища через walletService.disconnectWallet
       }
     }
     
@@ -174,11 +169,16 @@ function Wallet({ userData }) {
         <WalletHeader 
           onSelectWallet={handleSelectWallet}
           onScanQR={handleScanQR}
+          avatar={userData?.avatar}
+          firstName={userData?.first_name}
+          username={userData?.username}
+          telegramUserId={userData?.telegram_user_id}
         />
 
         <BalanceDisplay 
           balance={totalBalance} 
           onConnectWallet={handleConnectWallet}
+          userData={userData}
         />
       </div>
 
@@ -186,6 +186,7 @@ function Wallet({ userData }) {
         connectedWallets={connectedWallets}
         selectedWallet={selectedWallet}
         onDisconnectWallet={handleDisconnectWallet}
+        userData={userData}
       />
 
       <div className="safe-area-bottom" />
@@ -196,6 +197,7 @@ function Wallet({ userData }) {
         connectedWallets={connectedWallets}
         selectedWallet={selectedWallet}
         onSelect={handleWalletSelection}
+        userData={userData}
       />
 
       <ConnectWalletModal
@@ -203,11 +205,13 @@ function Wallet({ userData }) {
         onOpenChange={setShowConnectWallet}
         onConnectWallet={handleWalletConnection}
         connectedWallets={connectedWallets}
+        userData={userData}
       />
 
       <QRScanner
         open={showQRScanner}
         onOpenChange={setShowQRScanner}
+        userData={userData}
       />
 
       <Toaster 
@@ -218,7 +222,7 @@ function Wallet({ userData }) {
         }}
       />
 
-      <Menu />
+      <Menu userData={userData} />
     </div>
   );
 }

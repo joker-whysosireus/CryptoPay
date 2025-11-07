@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { Check } from "lucide-react";
 import './WalletSelector.css';
 
-function WalletSelector({ open, onOpenChange, connectedWallets, selectedWallet, onSelect }) {
+function WalletSelector({ open, onOpenChange, connectedWallets, selectedWallet, onSelect, userData }) {
   if (!open) return null;
 
   const handleOverlayClick = (e) => {

@@ -9,7 +9,7 @@ const ALL_WALLETS = [
   { id: "solana", name: "Solana", symbol: "SOL", icon: "/sol.svg" },
 ];
 
-function WalletList({ connectedWallets, selectedWallet, onDisconnectWallet }) {
+function WalletList({ connectedWallets, selectedWallet, onDisconnectWallet, userData }) {
   // Создаем карту подключенных кошельков для быстрого доступа
   const connectedWalletsMap = {};
   connectedWallets.forEach(wallet => {
