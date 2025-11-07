@@ -1,0 +1,59 @@
+.header-section {
+  width: 100%;
+}
+
+.user-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #636366, #48484A);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+.btn-primary {
+  background-color: #636366;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 23px;
+  height: 46px;
+  padding: 0 24px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  background-color: #727276;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-circle {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: #636366;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-circle:hover {
+  background-color: #727276;
+  transform: scale(1.05);
+}
