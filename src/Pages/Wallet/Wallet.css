@@ -1,7 +1,7 @@
 /* Основной контейнер приложения */
 .app-container {
-  max-width: 380px;
-  min-height: 852px;
+  height: auto;
+  width: auto;
   margin: 0 auto;
   background-color: #1C1C1D;
   position: relative;

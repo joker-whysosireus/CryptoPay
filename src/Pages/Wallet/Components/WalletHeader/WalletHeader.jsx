@@ -10,7 +10,7 @@ function WalletHeader({ onSelectWallet, onScanQR, avatar, firstName, username })
               src={avatar} 
               alt="User Avatar" 
               className="avatar-image"
-              style={{ width: '52px', height: '52px' }} // Явно задаем размер
+              style={{ width: '46px', height: '46px' }} // Явно задаем размер
             />
           ) : (
             <span>👤</span>

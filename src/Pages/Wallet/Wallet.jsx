@@ -17,6 +17,8 @@ import WalletSelector from "./Components/WalletSelector/WalletSelector";
 import ConnectWalletModal from "./Components/ConnectWalletModal/ConnectWalletModal";
 import QRScanner from "./Components/QRScanner/QRScanner";
 
+const UPDATE_WALLETS_URL = 'https://cryptopayappbackend.netlify.app/.netlify/functions/update-wallets';
+
 function Wallet({ userData, updateUserData }) {
   const [showWalletSelector, setShowWalletSelector] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -33,6 +35,39 @@ function Wallet({ userData, updateUserData }) {
   const { connected: isSolConnected, disconnect: disconnectSol, publicKey: solPublicKey, wallet: solWallet } = useWallet();
   const { connection: solConnection } = useConnection();
   const [tonConnectUI] = useTonConnectUI();
+
+  // Функция для обновления кошельков в базе данных
+  const updateWalletsInDatabase = async (walletsArray) => {
+    const userId = userData?.telegram_user_id;
+
+    if (!userId) {
+        console.log("User ID not found, cannot update wallets.");
+        return false;
+    }
+
+    try {
+        const response = await fetch(UPDATE_WALLETS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                telegramUserId: userId,
+                wallets: walletsArray
+            }),
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        if (!data.success) throw new Error(`Failed to update wallets: ${data.error}`);
+        
+        console.log("Wallets successfully updated in database");
+        return true;
+    } catch (error) {
+        console.error("Error updating wallets:", error);
+        return false;
+    }
+  };
 
   // Загрузка подключенных кошельков при монтировании
   useEffect(() => {
@@ -58,6 +93,7 @@ function Wallet({ userData, updateUserData }) {
     if (tonAddress) {
       try {
         await walletService.updateWallet('ton', { address: tonAddress });
+        await updateWalletsInDatabase(walletService.getWalletsForDatabase());
       } catch (error) {
         console.error("Ошибка подключения TON:", error);
       }
@@ -68,6 +104,7 @@ function Wallet({ userData, updateUserData }) {
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         await walletService.updateWallet('ethereum', { address: ethAddress, provider });
+        await updateWalletsInDatabase(walletService.getWalletsForDatabase());
       } catch (error) {
         console.error("Ошибка подключения Ethereum:", error);
       }
@@ -80,6 +117,7 @@ function Wallet({ userData, updateUserData }) {
           publicKey: solPublicKey, 
           connection: solConnection 
         });
+        await updateWalletsInDatabase(walletService.getWalletsForDatabase());
       } catch (error) {
         console.error("Ошибка подключения Solana:", error);
       }
@@ -117,12 +155,20 @@ function Wallet({ userData, updateUserData }) {
             walletService.setSelectedWallet(tronWallet.id);
           }
           walletService.saveToStorage();
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
           toast.success("Tron кошелек подключен");
           loadConnectedWallets();
           break;
         case 'bitcoin':
-          // Используем AppKit для Bitcoin
-          appKit.open();
+          const btcWallet = await walletService.connectBitcoin();
+          walletService.connectedWallets.push(btcWallet);
+          if (!walletService.selectedWallet) {
+            walletService.setSelectedWallet(btcWallet.id);
+          }
+          walletService.saveToStorage();
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+          toast.success("Bitcoin кошелек подключен");
+          loadConnectedWallets();
           break;
         default:
           throw new Error(`Неподдерживаемый блокчейн: ${blockchain}`);
@@ -132,7 +178,7 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
-  const handleDisconnectWallet = (walletId) => {
+  const handleDisconnectWallet = async (walletId) => {
     const wallet = connectedWallets.find(w => w.id === walletId);
     
     if (wallet) {
@@ -146,19 +192,21 @@ function Wallet({ userData, updateUserData }) {
         case 'ton':
           tonConnectUI.disconnect();
           break;
-        // Tron и Bitcoin удаляются только из хранилища через walletService.disconnectWallet
+        // Tron и Bitcoin удаляются только из хранилища
       }
     }
     
     walletService.disconnectWallet(walletId);
+    await updateWalletsInDatabase(walletService.getWalletsForDatabase());
     toast.info("Кошелек отключен");
     loadConnectedWallets();
   };
 
-  const handleWalletSelection = (walletId) => {
+  const handleWalletSelection = async (walletId) => {
     const success = walletService.setSelectedWallet(walletId);
     if (success) {
       setSelectedWallet(walletService.getSelectedWallet());
+      await updateWalletsInDatabase(walletService.getWalletsForDatabase());
       loadConnectedWallets();
     }
   };

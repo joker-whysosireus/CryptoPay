@@ -1,10 +1,12 @@
 import { ethers } from 'ethers';
 import { Connection, clusterApiUrl } from '@solana/web3.js';
+import TronWeb from 'tronweb';
 
 class MultiChainWalletService {
   constructor() {
     this.connectedWallets = this.loadFromStorage();
     this.selectedWallet = this.loadSelectedWallet();
+    this.tronWeb = null;
   }
 
   loadFromStorage() {
@@ -26,6 +28,41 @@ class MultiChainWalletService {
     } else {
       localStorage.removeItem('selectedWallet');
     }
+  }
+
+  // Инициализация TronWeb
+  async initializeTronWeb() {
+    return new Promise((resolve, reject) => {
+      if (this.tronWeb && this.tronWeb.ready) {
+        resolve(this.tronWeb);
+        return;
+      }
+
+      // Проверяем наличие TronLink
+      if (typeof window === 'undefined' || !window.tronLink) {
+        reject(new Error('TronLink не установлен'));
+        return;
+      }
+
+      // Используем TronLink как провайдер для TronWeb
+      try {
+        this.tronWeb = new TronWeb({
+          fullHost: 'https://api.trongrid.io',
+          headers: { "TRON-PRO-API-KEY": 'your-api-key' }, // Можно получить на trangrid.io
+        });
+
+        // Устанавливаем провайдер от TronLink
+        if (window.tronWeb && window.tronWeb.defaultAddress) {
+          this.tronWeb.setAddress(window.tronWeb.defaultAddress.base58);
+          this.tronWeb.injectPromise = window.tronWeb.injectPromise;
+        }
+
+        console.log('TronWeb инициализирован');
+        resolve(this.tronWeb);
+      } catch (error) {
+        reject(new Error(`Ошибка инициализации TronWeb: ${error.message}`));
+      }
+    });
   }
 
   // Подключение Ethereum кошелька
@@ -85,87 +122,61 @@ class MultiChainWalletService {
     }
   }
 
-  // Подключение Tron кошелька
+  // Подключение Tron кошелька с использованием tronweb
   async connectTron() {
-    return new Promise((resolve, reject) => {
-      const checkTronConnection = () => {
-        try {
-          // Проверяем наличие TronLink
-          if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
-            const address = window.tronWeb.defaultAddress.base58;
-            window.tronWeb.trx.getBalance(address)
-              .then(balance => {
-                resolve({
-                  id: `trx_${address}`,
-                  blockchain: 'tron',
-                  name: 'Tron Wallet',
-                  symbol: 'TRX',
-                  address: address,
-                  balance: (balance / 1e6).toString(),
-                  isConnected: true
-                });
-              })
-              .catch(error => reject(new Error(`Ошибка получения баланса Tron: ${error.message}`)));
-          } else {
-            // Если TronLink установлен, но не подключен, запрашиваем подключение
-            if (window.tronLink && window.tronLink.request) {
-              window.tronLink.request({ method: 'tron_requestAccounts' })
-                .then(() => {
-                  // Даем время на обработку запроса
-                  setTimeout(() => {
-                    if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
-                      const address = window.tronWeb.defaultAddress.base58;
-                      window.tronWeb.trx.getBalance(address)
-                        .then(balance => {
-                          resolve({
-                            id: `trx_${address}`,
-                            blockchain: 'tron',
-                            name: 'Tron Wallet',
-                            symbol: 'TRX',
-                            address: address,
-                            balance: (balance / 1e6).toString(),
-                            isConnected: true
-                          });
-                        })
-                        .catch(error => reject(new Error(`Ошибка получения баланса Tron: ${error.message}`)));
-                    } else {
-                      reject(new Error('Пожалуйста, разрешите доступ к аккаунту в TronLink'));
-                    }
-                  }, 1000);
-                })
-                .catch(error => {
-                  reject(new Error(`Ошибка запроса подключения TronLink: ${error.message}`));
-                });
-            } else {
-              // TronLink не установлен
-              const shouldInstall = window.confirm(
-                'TronLink не установлен. Хотите перейти на страницу установки?'
-              );
-              if (shouldInstall) {
-                window.open('https://www.tronlink.org/', '_blank');
-              }
-              reject(new Error('TronLink не установлен. Пожалуйста, установите расширение TronLink.'));
-            }
-          }
-        } catch (error) {
-          reject(new Error(`Ошибка подключения Tron: ${error.message}`));
+    try {
+      // Проверяем наличие TronLink
+      if (typeof window === 'undefined' || !window.tronLink) {
+        const shouldInstall = window.confirm(
+          'TronLink не установлен. Хотите перейти на страницу установки?'
+        );
+        if (shouldInstall) {
+          window.open('https://www.tronlink.org/', '_blank');
         }
-      };
-
-      // Если tronWeb уже готов, подключаем сразу
-      if (window.tronWeb && window.tronWeb.ready) {
-        checkTronConnection();
-      } else {
-        // Ждем пока tronWeb будет готов
-        setTimeout(checkTronConnection, 1000);
+        throw new Error('TronLink не установлен. Пожалуйста, установите расширение TronLink.');
       }
-    });
+
+      // Запрашиваем подключение через TronLink
+      if (window.tronLink.request) {
+        await window.tronLink.request({ method: 'tron_requestAccounts' });
+      }
+
+      // Инициализируем TronWeb
+      await this.initializeTronWeb();
+
+      // Проверяем, что TronWeb инициализирован и есть адрес
+      if (!this.tronWeb || !this.tronWeb.defaultAddress) {
+        throw new Error('Не удалось инициализировать TronWeb');
+      }
+
+      const address = this.tronWeb.defaultAddress.base58;
+      if (!address) {
+        throw new Error('Не удалось получить адрес кошелька Tron');
+      }
+
+      // Получаем баланс через TronWeb
+      const balance = await this.tronWeb.trx.getBalance(address);
+      
+      return {
+        id: `trx_${address}`,
+        blockchain: 'tron',
+        name: 'Tron Wallet',
+        symbol: 'TRX',
+        address: address,
+        balance: this.tronWeb.fromSun(balance), // Конвертируем из SUN в TRX
+        isConnected: true
+      };
+    } catch (error) {
+      if (error.code === 4001) {
+        throw new Error('Пользователь отклонил запрос на подключение TronLink.');
+      }
+      throw new Error(`Ошибка подключения Tron: ${error.message}`);
+    }
   }
 
   // Подключение Bitcoin кошелька
   async connectBitcoin() {
     try {
-      // Для Bitcoin используем Web3Modal или другие кошельки, поддерживающие Bitcoin
       if (typeof window.ethereum !== 'undefined') {
         const accounts = await window.ethereum.request({ 
           method: 'eth_requestAccounts' 
@@ -380,6 +391,18 @@ class MultiChainWalletService {
     this.selectedWallet = null;
     localStorage.removeItem('multichain_connected_wallets');
     localStorage.removeItem('selectedWallet');
+  }
+
+  // Метод для получения формата кошельков для базы данных
+  getWalletsForDatabase() {
+    return this.connectedWallets.map(wallet => ({
+      blockchain: wallet.blockchain,
+      address: wallet.address,
+      symbol: wallet.symbol,
+      balance: wallet.balance,
+      connectedAt: wallet.connectedAt,
+      isConnected: wallet.isConnected
+    }));
   }
 }
 
