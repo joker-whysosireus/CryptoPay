@@ -5,9 +5,10 @@ import { useAccount, useDisconnect, useConnect } from 'wagmi';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { ethers } from 'ethers';
 import './Wallet.css';
-import Menu from "../../assets/Menus/Menu/Menu";
+import Menu from "../../assets/Menu/Menu";
 import { walletService } from "./Components/Services/walletService";
 import { appKit } from "../../config/appkit-config";
+import { tronService } from "./Components/Services/tronService";
 
 // Импорт компонентов
 import WalletHeader from "./Components/WalletHeader/WalletHeader";
@@ -65,66 +66,83 @@ function Wallet({ userData, updateUserData }) {
         return true;
     } catch (error) {
         console.error("Error updating wallets:", error);
+        toast.error("Ошибка обновления кошельков в базе данных");
         return false;
     }
   };
 
-  // Загрузка подключенных кошельков при монтировании
-  useEffect(() => {
-    loadConnectedWallets();
-  }, []);
-
-  // Отслеживание изменений подключений
-  useEffect(() => {
-    handleWalletConnections();
-  }, [tonAddress, ethAddress, isEthConnected, isSolConnected, solPublicKey]);
-
+  // Загрузка подключенных кошельков
   const loadConnectedWallets = () => {
     const wallets = walletService.getConnectedWallets();
     const currentSelectedWallet = walletService.getSelectedWallet();
+    
+    console.log("Loading connected wallets:", wallets);
+    console.log("Selected wallet:", currentSelectedWallet);
     
     setConnectedWallets(wallets);
     setSelectedWallet(currentSelectedWallet);
     setTotalBalance(walletService.getTotalBalance());
   };
 
-  const handleWalletConnections = async () => {
-    // Обработка подключения TON
-    if (tonAddress) {
-      try {
-        await walletService.updateWallet('ton', { address: tonAddress });
-        await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-      } catch (error) {
-        console.error("Ошибка подключения TON:", error);
-      }
-    }
-
-    // Обработка подключения Ethereum
-    if (isEthConnected && ethAddress) {
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        await walletService.updateWallet('ethereum', { address: ethAddress, provider });
-        await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-      } catch (error) {
-        console.error("Ошибка подключения Ethereum:", error);
-      }
-    }
-
-    // Обработка подключения Solana
-    if (isSolConnected && solPublicKey) {
-      try {
-        await walletService.updateWallet('solana', { 
-          publicKey: solPublicKey, 
-          connection: solConnection 
-        });
-        await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-      } catch (error) {
-        console.error("Ошибка подключения Solana:", error);
-      }
-    }
-
+  // Загрузка при монтировании
+  useEffect(() => {
     loadConnectedWallets();
-  };
+  }, []);
+
+  // Обработка подключений через Reown Cloud (Ethereum, Solana, Bitcoin)
+  useEffect(() => {
+    const handleReownConnections = async () => {
+      console.log("Checking Reown connections...");
+      
+      // Проверяем Ethereum
+      if (isEthConnected && ethAddress) {
+        console.log("Ethereum connected:", ethAddress);
+        try {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          await walletService.updateWallet('ethereum', { address: ethAddress, provider });
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+          loadConnectedWallets();
+        } catch (error) {
+          console.error("Ошибка подключения Ethereum:", error);
+        }
+      }
+
+      // Проверяем Solana
+      if (isSolConnected && solPublicKey) {
+        console.log("Solana connected:", solPublicKey.toString());
+        try {
+          await walletService.updateWallet('solana', { 
+            publicKey: solPublicKey, 
+            connection: solConnection 
+          });
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+          loadConnectedWallets();
+        } catch (error) {
+          console.error("Ошибка подключения Solana:", error);
+        }
+      }
+    };
+
+    handleReownConnections();
+  }, [tonAddress, ethAddress, isEthConnected, isSolConnected, solPublicKey]);
+
+  // Обработка подключения TON через TonConnect
+  useEffect(() => {
+    const handleTONConnection = async () => {
+      if (tonAddress) {
+        console.log("TON connected:", tonAddress);
+        try {
+          await walletService.updateWallet('ton', { address: tonAddress });
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+          loadConnectedWallets();
+        } catch (error) {
+          console.error("Ошибка подключения TON:", error);
+        }
+      }
+    };
+
+    handleTONConnection();
+  }, [tonAddress]);
 
   const handleSelectWallet = () => {
     setShowWalletSelector(true);
@@ -143,37 +161,42 @@ function Wallet({ userData, updateUserData }) {
     try {
       switch (blockchain) {
         case 'ethereum':
+          console.log("Opening Reown for Ethereum");
           appKit.open();
           break;
+          
         case 'solana':
+          console.log("Opening Reown for Solana");
           appKit.open();
           break;
+          
         case 'tron':
-          const tronWallet = await walletService.connectTron();
-          walletService.connectedWallets.push(tronWallet);
-          if (!walletService.selectedWallet) {
-            walletService.setSelectedWallet(tronWallet.id);
+          console.log("Connecting Tron wallet via TronLink");
+          const tronWallet = await tronService.connectTron();
+          
+          if (tronWallet) {
+            await walletService.updateWallet('tron', tronWallet);
+            await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+            toast.success("Tron кошелек подключен");
+            loadConnectedWallets();
           }
-          walletService.saveToStorage();
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          toast.success("Tron кошелек подключен");
-          loadConnectedWallets();
           break;
+          
+        case 'ton':
+          console.log("Connecting TON wallet");
+          tonConnectUI.openModal();
+          break;
+          
         case 'bitcoin':
-          const btcWallet = await walletService.connectBitcoin();
-          walletService.connectedWallets.push(btcWallet);
-          if (!walletService.selectedWallet) {
-            walletService.setSelectedWallet(btcWallet.id);
-          }
-          walletService.saveToStorage();
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          toast.success("Bitcoin кошелек подключен");
-          loadConnectedWallets();
+          console.log("Opening Reown for Bitcoin");
+          appKit.open();
           break;
+          
         default:
           throw new Error(`Неподдерживаемый блокчейн: ${blockchain}`);
       }
     } catch (error) {
+      console.error("Connection error:", error);
       toast.error(`Ошибка подключения: ${error.message}`);
     }
   };
@@ -192,7 +215,10 @@ function Wallet({ userData, updateUserData }) {
         case 'ton':
           tonConnectUI.disconnect();
           break;
-        // Tron и Bitcoin удаляются только из хранилища
+        case 'tron':
+          // Для Tron просто удаляем из хранилища
+          tronService.disconnectTron();
+          break;
       }
     }
     
@@ -210,6 +236,15 @@ function Wallet({ userData, updateUserData }) {
       loadConnectedWallets();
     }
   };
+
+  // Периодическая проверка состояния кошельков
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadConnectedWallets();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="app-container">

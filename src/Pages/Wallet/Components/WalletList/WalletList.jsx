@@ -22,12 +22,14 @@ function WalletList({ connectedWallets, selectedWallet, onDisconnectWallet, user
     const isConnected = !!connectedWallet;
     const isSelected = selectedWallet && selectedWallet.blockchain === wallet.id;
     
+    console.log(`Wallet ${wallet.id}: connected=${isConnected}, selected=${isSelected}`);
+    
     if (isConnected) {
       return {
         ...wallet,
         address: connectedWallet.address,
         balance: connectedWallet.balance,
-        balanceInRub: connectedWallet.balanceInRub,
+        balanceInRub: connectedWallet.balanceInRub || 0,
         isConnected: true,
         isSelected: isSelected,
         connectedId: connectedWallet.id
@@ -44,6 +46,8 @@ function WalletList({ connectedWallets, selectedWallet, onDisconnectWallet, user
       isSelected: false
     };
   });
+
+  console.log("WalletList - displayWallets:", displayWallets);
 
   return (
     <div className="wallets-section slide-up">
@@ -70,14 +74,19 @@ function WalletList({ connectedWallets, selectedWallet, onDisconnectWallet, user
             </div>
             <p className="wallet-address">
               {wallet.isConnected ? 
-                `${wallet.address.slice(0, 3)}...${wallet.address.slice(-3)}` : 
+                `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : 
                 'Не подключен'
               }
             </p>
           </div>
 
           <div className="wallet-balance-section">
-            <p className="wallet-balance">{wallet.balanceInRub.toLocaleString('ru-RU')} ₽</p>
+            <p className="wallet-balance">
+              {typeof wallet.balanceInRub === 'number' 
+                ? wallet.balanceInRub.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : '0'
+              } ₽
+            </p>
             <p className="wallet-crypto-balance">
               {wallet.isConnected ? 
                 `${parseFloat(wallet.balance).toFixed(4)} ${wallet.symbol}` : 

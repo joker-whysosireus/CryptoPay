@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { clusterApiUrl } from '@solana/web3.js'
 
 import App from './App'
@@ -24,6 +25,9 @@ const wallets = [
 // React Query клиент
 const queryClient = new QueryClient()
 
+// Импорт стилей Solana wallet adapter
+import '@solana/wallet-adapter-react-ui/styles.css'
+
 const root = createRoot(document.getElementById('root'))
 root.render(
   <TonConnectUIProvider manifestUrl={manifestUrl}>
@@ -31,7 +35,9 @@ root.render(
       <QueryClientProvider client={queryClient}>
         <ConnectionProvider endpoint={endpoint}>
           <WalletProvider wallets={wallets} autoConnect>
-            <App />
+            <WalletModalProvider>
+              <App />
+            </WalletModalProvider>
           </WalletProvider>
         </ConnectionProvider>
       </QueryClientProvider>
