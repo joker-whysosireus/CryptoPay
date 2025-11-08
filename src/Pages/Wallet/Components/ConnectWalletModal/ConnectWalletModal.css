@@ -128,6 +128,15 @@
 
 }
 
+.wallet-selector-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wallet-selector-item.disabled:hover {
+  background-color: #2A2A2C !important;
+}
+
 .section-divider {
   display: flex;
   align-items: center;

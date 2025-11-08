@@ -1,4 +1,3 @@
-// walletService.js
 import { ethers } from 'ethers';
 
 class MultiChainWalletService {
@@ -28,52 +27,103 @@ class MultiChainWalletService {
     }
   }
 
-  // Подключение Ethereum кошелька через Reown
-  async connectEthereum(address, provider) {
+  // Подключение Ethereum через MetaMask
+  async connectEthereum() {
     try {
-      const balance = await provider.getBalance(address);
+      // Проверяем наличие MetaMask
+      if (typeof window.ethereum === 'undefined') {
+        throw new Error('MetaMask не установлен. Пожалуйста, установите расширение MetaMask.');
+      }
+
+      // Запрашиваем подключение аккаунтов
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      });
+
+      if (accounts.length === 0) {
+        throw new Error('Пользователь отклонил запрос на подключение.');
+      }
+
+      const address = accounts[0];
       
+      // Получаем баланс
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const balance = await provider.getBalance(address);
+      const balanceInETH = ethers.formatEther(balance);
+
       return {
         id: `eth_${address}`,
         blockchain: 'ethereum',
         name: 'Ethereum Wallet',
         symbol: 'ETH',
         address: address,
-        balance: ethers.formatEther(balance),
+        balance: balanceInETH,
         isConnected: true,
         connectedAt: new Date().toISOString()
       };
     } catch (error) {
+      if (error.code === 4001) {
+        throw new Error('Пользователь отклонил запрос на подключение MetaMask.');
+      }
       throw new Error(`Ошибка подключения Ethereum: ${error.message}`);
     }
   }
 
-  // Подключение Solana кошелька через Reown
-  async connectSolana(publicKey, connection) {
+  // Подключение Solana через Phantom
+  async connectSolana() {
     try {
-      // Используем базовый JavaScript для работы с Solana через Reown
-      // connection должен быть предоставлен через Reown Cloud
-      const balance = await connection.getBalance(publicKey);
+      // Проверяем наличие Phantom
+      if (typeof window === 'undefined' || !window.phantom?.solana) {
+        throw new Error('Phantom не установлен. Пожалуйста, установите расширение Phantom Wallet.');
+      }
+
+      const provider = window.phantom.solana;
       
+      // Запрашиваем подключение
+      const response = await provider.connect();
+      const publicKey = response.publicKey.toString();
+
+      // Получаем баланс (используем публичный RPC)
+      const connectionUrl = 'https://api.mainnet-beta.solana.com';
+      const balanceResponse = await fetch(connectionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'getBalance',
+          params: [publicKey],
+        }),
+      });
+
+      const balanceData = await balanceResponse.json();
+      const balanceInLamports = balanceData.result?.value || 0;
+      const balanceInSOL = (balanceInLamports / 1e9).toString();
+
       return {
-        id: `sol_${publicKey.toString()}`,
+        id: `sol_${publicKey}`,
         blockchain: 'solana',
         name: 'Solana Wallet',
         symbol: 'SOL',
-        address: publicKey.toString(),
-        balance: (balance / 1e9).toString(), // Конвертация lamports в SOL
+        address: publicKey,
+        balance: balanceInSOL,
         isConnected: true,
         connectedAt: new Date().toISOString()
       };
     } catch (error) {
+      if (error.code === 4001) {
+        throw new Error('Пользователь отклонил запрос на подключение Phantom.');
+      }
       throw new Error(`Ошибка подключения Solana: ${error.message}`);
     }
   }
 
-  // Подключение TON кошелька через TonConnect
+  // Подключение TON через TonConnect
   async connectTON(address) {
     try {
-      // Mock баланс для демонстрации
+      // Mock баланс - в реальном приложении нужно получать через TON API
       const mockBalance = (Math.random() * 10).toFixed(4);
       
       return {
@@ -91,26 +141,71 @@ class MultiChainWalletService {
     }
   }
 
-  // Подключение Bitcoin кошелька через Reown
-  async connectBitcoin() {
+  // Подключение Tron через TronLink
+  async connectTron() {
     try {
-      // Для Bitcoin используем mock данные
-      const mockAddress = `bc1${Array(12).fill(0).map(() => 
-        Math.random().toString(36).charAt(2)).join('')}`;
-      const mockBalance = (Math.random() * 0.1).toFixed(6);
-      
+      // Проверяем наличие TronLink
+      if (typeof window === 'undefined' || !window.tronLink) {
+        throw new Error('TronLink не установлен. Пожалуйста, установите расширение TronLink.');
+      }
+
+      // Запрашиваем подключение
+      if (window.tronLink.request) {
+        const result = await window.tronLink.request({ method: 'tron_requestAccounts' });
+        
+        if (result.code === 4000) {
+          throw new Error('Пользователь отклонил запрос на подключение.');
+        }
+      }
+
+      // Ждем инициализации TronWeb
+      await new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        const checkTronWeb = () => {
+          attempts++;
+          
+          if (window.tronWeb && window.tronWeb.ready) {
+            resolve(window.tronWeb);
+          } else if (attempts < maxAttempts) {
+            setTimeout(checkTronWeb, 100);
+          } else {
+            reject(new Error('TronWeb не доступен'));
+          }
+        };
+        
+        checkTronWeb();
+      });
+
+      if (!window.tronWeb || !window.tronWeb.defaultAddress) {
+        throw new Error('Не удалось инициализировать TronWeb');
+      }
+
+      const address = window.tronWeb.defaultAddress.base58;
+      if (!address) {
+        throw new Error('Не удалось получить адрес кошелька Tron');
+      }
+
+      // Получаем баланс
+      const balance = await window.tronWeb.trx.getBalance(address);
+      const balanceInTRX = window.tronWeb.fromSun(balance);
+
       return {
-        id: `btc_${Date.now()}`,
-        blockchain: 'bitcoin',
-        name: 'Bitcoin Wallet',
-        symbol: 'BTC',
-        address: mockAddress,
-        balance: mockBalance,
+        id: `trx_${address}`,
+        blockchain: 'tron',
+        name: 'Tron Wallet',
+        symbol: 'TRX',
+        address: address,
+        balance: balanceInTRX.toString(),
         isConnected: true,
         connectedAt: new Date().toISOString()
       };
     } catch (error) {
-      throw new Error(`Ошибка подключения Bitcoin: ${error.message}`);
+      if (error.code === 4000 || error.code === 4001) {
+        throw new Error('Пользователь отклонил запрос на подключение TronLink.');
+      }
+      throw new Error(`Ошибка подключения Tron: ${error.message}`);
     }
   }
 
@@ -121,20 +216,16 @@ class MultiChainWalletService {
       
       switch (blockchain) {
         case 'ethereum':
-          walletData = await this.connectEthereum(data.address, data.provider);
+          walletData = data; // Уже подключен через connectEthereum
           break;
         case 'solana':
-          walletData = await this.connectSolana(data.publicKey, data.connection);
+          walletData = data; // Уже подключен через connectSolana
           break;
         case 'ton':
           walletData = await this.connectTON(data.address);
           break;
         case 'tron':
-          // Для Tron используем готовые данные из tronService
-          walletData = data;
-          break;
-        case 'bitcoin':
-          walletData = await this.connectBitcoin();
+          walletData = data; // Уже подключен через connectTron
           break;
         default:
           throw new Error(`Неподдерживаемый блокчейн: ${blockchain}`);

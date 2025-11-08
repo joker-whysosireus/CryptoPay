@@ -1,14 +1,9 @@
 import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import { useTonConnectUI, useTonAddress } from '@tonconnect/ui-react';
-import { useAccount, useDisconnect, useConnect } from 'wagmi';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { ethers } from 'ethers';
 import './Wallet.css';
-import Menu from "../../assets/Menu/Menu";
+import Menu from "../../assets/Menus/Menu/Menu";
 import { walletService } from "./Components/Services/walletService";
-import { appKit } from "../../config/appkit-config";
-import { tronService } from "./Components/Services/tronService";
 
 // Импорт компонентов
 import WalletHeader from "./Components/WalletHeader/WalletHeader";
@@ -28,13 +23,8 @@ function Wallet({ userData, updateUserData }) {
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [totalBalance, setTotalBalance] = useState(0);
 
-  // Хуки для разных блокчейнов
+  // TON хуки
   const tonAddress = useTonAddress();
-  const { address: ethAddress, isConnected: isEthConnected } = useAccount();
-  const { disconnect: disconnectEth } = useDisconnect();
-  const { connect: connectEth } = useConnect();
-  const { connected: isSolConnected, disconnect: disconnectSol, publicKey: solPublicKey, wallet: solWallet } = useWallet();
-  const { connection: solConnection } = useConnection();
   const [tonConnectUI] = useTonConnectUI();
 
   // Функция для обновления кошельков в базе данных
@@ -89,44 +79,7 @@ function Wallet({ userData, updateUserData }) {
     loadConnectedWallets();
   }, []);
 
-  // Обработка подключений через Reown Cloud (Ethereum, Solana, Bitcoin)
-  useEffect(() => {
-    const handleReownConnections = async () => {
-      console.log("Checking Reown connections...");
-      
-      // Проверяем Ethereum
-      if (isEthConnected && ethAddress) {
-        console.log("Ethereum connected:", ethAddress);
-        try {
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          await walletService.updateWallet('ethereum', { address: ethAddress, provider });
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          loadConnectedWallets();
-        } catch (error) {
-          console.error("Ошибка подключения Ethereum:", error);
-        }
-      }
-
-      // Проверяем Solana
-      if (isSolConnected && solPublicKey) {
-        console.log("Solana connected:", solPublicKey.toString());
-        try {
-          await walletService.updateWallet('solana', { 
-            publicKey: solPublicKey, 
-            connection: solConnection 
-          });
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          loadConnectedWallets();
-        } catch (error) {
-          console.error("Ошибка подключения Solana:", error);
-        }
-      }
-    };
-
-    handleReownConnections();
-  }, [tonAddress, ethAddress, isEthConnected, isSolConnected, solPublicKey]);
-
-  // Обработка подключения TON через TonConnect
+  // Обработка подключения TON
   useEffect(() => {
     const handleTONConnection = async () => {
       if (tonAddress) {
@@ -135,8 +88,10 @@ function Wallet({ userData, updateUserData }) {
           await walletService.updateWallet('ton', { address: tonAddress });
           await updateWalletsInDatabase(walletService.getWalletsForDatabase());
           loadConnectedWallets();
+          toast.success("TON кошелек подключен");
         } catch (error) {
           console.error("Ошибка подключения TON:", error);
+          toast.error(`Ошибка подключения TON: ${error.message}`);
         }
       }
     };
@@ -161,25 +116,30 @@ function Wallet({ userData, updateUserData }) {
     try {
       switch (blockchain) {
         case 'ethereum':
-          console.log("Opening Reown for Ethereum");
-          appKit.open();
+          console.log("Connecting Ethereum via MetaMask");
+          const ethWallet = await walletService.connectEthereum();
+          await walletService.updateWallet('ethereum', ethWallet);
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+          toast.success("Ethereum кошелек подключен");
+          loadConnectedWallets();
           break;
           
         case 'solana':
-          console.log("Opening Reown for Solana");
-          appKit.open();
+          console.log("Connecting Solana via Phantom");
+          const solWallet = await walletService.connectSolana();
+          await walletService.updateWallet('solana', solWallet);
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+          toast.success("Solana кошелек подключен");
+          loadConnectedWallets();
           break;
           
         case 'tron':
-          console.log("Connecting Tron wallet via TronLink");
-          const tronWallet = await tronService.connectTron();
-          
-          if (tronWallet) {
-            await walletService.updateWallet('tron', tronWallet);
-            await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-            toast.success("Tron кошелек подключен");
-            loadConnectedWallets();
-          }
+          console.log("Connecting Tron via TronLink");
+          const tronWallet = await walletService.connectTron();
+          await walletService.updateWallet('tron', tronWallet);
+          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
+          toast.success("Tron кошелек подключен");
+          loadConnectedWallets();
           break;
           
         case 'ton':
@@ -188,8 +148,8 @@ function Wallet({ userData, updateUserData }) {
           break;
           
         case 'bitcoin':
-          console.log("Opening Reown for Bitcoin");
-          appKit.open();
+          console.log("Bitcoin - not implemented");
+          toast.info("Bitcoin подключение временно недоступно");
           break;
           
         default:
@@ -206,18 +166,17 @@ function Wallet({ userData, updateUserData }) {
     
     if (wallet) {
       switch (wallet.blockchain) {
-        case 'ethereum':
-          disconnectEth();
-          break;
-        case 'solana':
-          disconnectSol();
-          break;
         case 'ton':
           tonConnectUI.disconnect();
           break;
+        case 'ethereum':
+          // Для Ethereum просто удаляем из хранилища
+          break;
+        case 'solana':
+          // Для Solana просто удаляем из хранилища  
+          break;
         case 'tron':
           // Для Tron просто удаляем из хранилища
-          tronService.disconnectTron();
           break;
       }
     }
@@ -241,7 +200,7 @@ function Wallet({ userData, updateUserData }) {
   useEffect(() => {
     const interval = setInterval(() => {
       loadConnectedWallets();
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, []);
