@@ -6,15 +6,25 @@ function UserHeader({ userData, updateUserData }) {
   const userFriendlyAddress = useTonAddress();
 
   useEffect(() => {
-    // Сохраняем адрес кошелька только если есть userData
+    // Сохраняем адрес кошелька только если есть userData и адрес
     if (userFriendlyAddress && userData?.telegram_user_id) {
-      saveWalletAddress(userData.telegram_user_id, userFriendlyAddress);
+      saveWalletAddress(userData.telegram_user_id, userFriendlyAddress)
+        .then(() => {
+          console.log('Wallet address saved successfully');
+          // Вызываем updateUserData после успешного сохранения
+          if (updateUserData) {
+            updateUserData();
+          }
+        })
+        .catch(error => {
+          console.error('Error saving wallet address:', error);
+        });
     }
-  }, [userFriendlyAddress, userData]);
+  }, [userFriendlyAddress, userData, updateUserData]);
 
   const saveWalletAddress = async (telegramUserId, walletAddress) => {
     try {
-      const response = await fetch('/.netlify/functions/save-wallet', {
+      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/save-wallet', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,14 +39,14 @@ function UserHeader({ userData, updateUserData }) {
       
       if (result.success) {
         console.log('Wallet address saved successfully');
-        if (updateUserData) {
-          updateUserData();
-        }
+        return result;
       } else {
         console.error('Error saving wallet address:', result.error);
+        throw new Error(result.error || 'Failed to save wallet address');
       }
     } catch (error) {
       console.error('Error saving wallet address:', error);
+      throw error;
     }
   };
 

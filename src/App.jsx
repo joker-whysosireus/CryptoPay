@@ -40,7 +40,7 @@ const App = () => {
                 
                 // Установка цвета заголовка Telegram приложения
                 if (webApp.setHeaderColor) {
-                    webApp.setHeaderColor('#1C1C1D');
+                    webApp.setHeaderColor('#000000');
                 }
 
                 // EXPAND - развернуть приложение на весь экран

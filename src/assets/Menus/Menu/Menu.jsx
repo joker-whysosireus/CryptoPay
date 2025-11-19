@@ -21,7 +21,7 @@ const Menu = () => {
           <Link to="/" onClick={handleClick('/')}>
               {currentPath === '/' ? <WalletGreen /> :  <WalletGray />}
               <span className="Name">
-                Кошелек
+                Wallet
               </span>
           </Link>
         </div>
@@ -29,7 +29,7 @@ const Menu = () => {
           <Link to="/help" onClick={handleClick('/help')}>
             {currentPath === '/help' ? <HelpGreen /> : <HelpGray />}
             <span className="Name">
-              Рефералы
+              Friends
             </span>
           </Link>
         </div>

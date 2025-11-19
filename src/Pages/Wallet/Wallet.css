@@ -35,10 +35,29 @@
   width: 100%;
 }
 
+/* Альтернативные способы отображения USDT иконки */
 .wallet-usdt-icon {
   width: 28px;
   height: 28px;
+  /* Способ 1: Использовать белую версию через filter */
   filter: brightness(0) invert(1);
+  
+  /* Способ 2: Или использовать background-image */
+  /* background-image: url('/usdt.svg'); */
+  /* background-size: contain; */
+  /* background-repeat: no-repeat; */
+  /* background-position: center; */
+}
+
+/* Fallback если SVG не грузится */
+.wallet-balance-display::before {
+  content: '';
+  display: none; /* По умолчанию скрыто */
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #26a17b 0%, #26a17b 100%);
+  border-radius: 50%;
+  position: relative;
 }
 
 .wallet-balance-amount {
@@ -131,7 +150,6 @@
   gap: 10px;
 }
 
-/* Новый стиль для disabled кнопки */
 .wallet-withdraw-button {
   width: 100%;
   padding: 14px;
@@ -173,12 +191,193 @@
   background: #333333;
 }
 
+/* Стили для модального окна вывода */
+.withdraw-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.withdraw-modal {
+  background: white;
+  width: 100%;
+  max-width: 500px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease-out;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.withdraw-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.withdraw-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-button:hover {
+  color: #000;
+}
+
+.withdraw-modal-content {
+  padding: 20px;
+}
+
+.withdraw-balance-info {
+  margin-bottom: 20px;
+}
+
+.withdraw-balance-info p {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.withdraw-input-group {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.withdraw-input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.withdraw-amount-input {
+  width: 100%;
+  padding: 12px 50px 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  font-size: 16px;
+  background: white;
+  color: #000000;
+}
+
+.currency-symbol {
+  position: absolute;
+  right: 16px;
+  top: 42px;
+  color: #666666;
+  font-size: 14px;
+}
+
+.withdraw-fee {
+  font-size: 12px !important;
+  color: #666 !important;
+  margin-bottom: 10px !important;
+}
+
+.withdraw-total {
+  font-size: 16px !important;
+  color: #000 !important;
+  margin-bottom: 0 !important;
+}
+
+.withdraw-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.confirm-withdraw-button {
+  width: 100%;
+  padding: 16px;
+  background: #000000;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.confirm-withdraw-button:disabled {
+  background: #a0a0a0;
+  cursor: not-allowed;
+}
+
+.confirm-withdraw-button:hover:not(:disabled) {
+  background: #333333;
+}
+
+.cancel-withdraw-button {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-withdraw-button:hover {
+  background: #f5f5f5;
+}
+
+/* Анимации */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .no-scroll {
   overflow: hidden;
 }
-/* Медиа-запросы для разных высот экрана */
 
-/* Маленькие экраны (до 670px) */
+/* Медиа-запросы для разных высот экрана */
 @media (max-height: 670px) {
   .wallet-container {
     padding-bottom: 90px;
@@ -240,58 +439,12 @@
     padding: 12px;
     font-size: 14px;
   }
-}
-
-/* Средние экраны (790px - 800px) */
-@media (min-height: 790px) and (max-height: 800px) {
-  .wallet-container {
-    padding-bottom: 100px;
-  }
   
-  .wallet-content {
-    gap: 18px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-  }
-  
-  .wallet-balance-display {
-    padding: 18px;
-  }
-  
-  .wallet-balance-amount {
-    font-size: 24px;
-  }
-  
-  .wallet-balance-currency {
-    font-size: 18px;
-  }
-  
-  .wallet-stat-card {
-    padding: 16px;
-  }
-  
-  .wallet-stat-value {
-    font-size: 20px;
-  }
-  
-  .wallet-info-card {
-    padding: 18px;
-  }
-  
-  .wallet-info-title {
-    font-size: 18px;
-  }
-  
-  .wallet-info-text {
-    font-size: 14px;
-  }
-  
-  .wallet-bottom-section {
-    gap: 18px;
+  .withdraw-modal {
+    max-height: 70vh;
   }
 }
 
-/* Большие экраны (890px - 940px) */
 @media (min-height: 890px) and (max-height: 940px) {
   .wallet-container {
     padding-bottom: 110px;
