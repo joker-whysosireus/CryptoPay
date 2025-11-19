@@ -8,6 +8,7 @@ function Wallet({ userData, updateUserData }) {
   const userFriendlyAddress = useTonAddress();
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   const handleWatchAd = () => {
     console.log("Showing ad");
@@ -18,6 +19,7 @@ function Wallet({ userData, updateUserData }) {
   };
 
   const handleConfirmWithdraw = async () => {
+    setProcessing(true);
     try {
       // Отправка уведомления разработчику
       await sendWithdrawalNotification(userData, withdrawAmount);
@@ -29,7 +31,7 @@ function Wallet({ userData, updateUserData }) {
       await updateUserBalance(userData.telegram_user_id, parseFloat(withdrawAmount));
       
       // Обновление данных пользователя
-      updateUserData();
+      await updateUserData();
       
       // Закрытие модального окна
       setIsWithdrawModalOpen(false);
@@ -37,6 +39,8 @@ function Wallet({ userData, updateUserData }) {
       
     } catch (error) {
       console.error('Error processing withdrawal:', error);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -89,7 +93,7 @@ function Wallet({ userData, updateUserData }) {
           <div className="wallet-info-card">
             <div className="wallet-info-title">How it works?</div>
             <div className="wallet-info-text">
-              • Watch ads and earn 0.001 USDT per view<br/>
+              • Watch ads and earn 0.01 USDT per view<br/>
               • Minimum withdrawal: 1 USDT<br/>
               • Withdraw to your TON wallet
             </div>
@@ -148,12 +152,9 @@ function Wallet({ userData, updateUserData }) {
                 <button 
                   className="confirm-withdraw-button"
                   onClick={handleConfirmWithdraw}
-                  disabled={!withdrawAmount || parseFloat(withdrawAmount) < 1 || parseFloat(withdrawAmount) > parseFloat(balance)}
+                  disabled={!withdrawAmount || parseFloat(withdrawAmount) < 1 || parseFloat(withdrawAmount) > parseFloat(balance) || processing}
                 >
-                  Confirm Withdrawal
-                </button>
-                <button className="cancel-withdraw-button" onClick={handleCancelWithdraw}>
-                  Cancel
+                  {processing ? 'Processing...' : 'Confirm Withdrawal'}
                 </button>
               </div>
             </div>

@@ -35,29 +35,10 @@
   width: 100%;
 }
 
-/* Альтернативные способы отображения USDT иконки */
 .wallet-usdt-icon {
   width: 28px;
   height: 28px;
-  /* Способ 1: Использовать белую версию через filter */
-  filter: brightness(0) invert(1);
-  
-  /* Способ 2: Или использовать background-image */
-  /* background-image: url('/usdt.svg'); */
-  /* background-size: contain; */
-  /* background-repeat: no-repeat; */
-  /* background-position: center; */
-}
-
-/* Fallback если SVG не грузится */
-.wallet-balance-display::before {
-  content: '';
-  display: none; /* По умолчанию скрыто */
-  width: 28px;
-  height: 28px;
-  background: linear-gradient(135deg, #26a17b 0%, #26a17b 100%);
-  border-radius: 50%;
-  position: relative;
+  filter: none;
 }
 
 .wallet-balance-amount {
@@ -326,6 +307,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  position: relative;
 }
 
 .confirm-withdraw-button:disabled {
@@ -337,21 +319,8 @@
   background: #333333;
 }
 
-.cancel-withdraw-button {
-  width: 100%;
-  padding: 14px;
-  background: transparent;
-  color: #666;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cancel-withdraw-button:hover {
-  background: #f5f5f5;
+.confirm-withdraw-button:disabled.processing {
+  background: #666666;
 }
 
 /* Анимации */
