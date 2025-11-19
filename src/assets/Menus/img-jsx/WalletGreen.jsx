@@ -1,10 +1,10 @@
-import walletgreen from './walletgreen.svg'; 
+import walletwhite from './walletwhite.svg'; 
 
 function WalletGreen() {
 
   return(
     <div>
-      <img src={walletgreen} alt="Star" />
+      <img src={walletwhite} alt="Star" />
     </div>
   );
 }

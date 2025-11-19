@@ -1,270 +1,90 @@
-import { useState, useEffect } from "react";
-import { Toaster, toast } from "sonner";
-import { useTonConnectUI, useTonAddress } from '@tonconnect/ui-react';
 import './Wallet.css';
 import Menu from "../../assets/Menus/Menu/Menu";
-import { walletService } from "./Components/Services/walletService";
+import UserHeader from '../../assets/UserHeader/UserHeader';
+import { useTonAddress } from '@tonconnect/ui-react';
+import { useState } from 'react';
 
-// Импорт компонентов
-import WalletHeader from "./Components/WalletHeader/WalletHeader";
-import BalanceDisplay from "./Components/BalanceDisplay/BalanceDisplay";
-import WalletList from "./Components/WalletList/WalletList";
-import WalletSelector from "./Components/WalletSelector/WalletSelector";
-import ConnectWalletModal from "./Components/ConnectWalletModal/ConnectWalletModal";
-import QRScanner from "./Components/QRScanner/QRScanner";
+function Wallet({ userData, updateUserData, userLanguage }) {
+  const userFriendlyAddress = useTonAddress();
+  const [withdrawAmount, setWithdrawAmount] = useState(userData?.balance || '0.000');
 
-const UPDATE_WALLETS_URL = 'https://cryptopayappbackend.netlify.app/.netlify/functions/update-wallets';
-
-function Wallet({ userData, updateUserData }) {
-  const [showWalletSelector, setShowWalletSelector] = useState(false);
-  const [showQRScanner, setShowQRScanner] = useState(false);
-  const [showConnectWallet, setShowConnectWallet] = useState(false);
-  const [connectedWallets, setConnectedWallets] = useState([]);
-  const [selectedWallet, setSelectedWallet] = useState(null);
-  const [totalBalance, setTotalBalance] = useState(0);
-
-  // TON хуки
-  const tonAddress = useTonAddress();
-  const [tonConnectUI] = useTonConnectUI();
-
-  // Функция для обновления кошельков в базе данных
-  const updateWalletsInDatabase = async (walletsArray) => {
-    const userId = userData?.telegram_user_id;
-
-    if (!userId) {
-        console.log("User ID not found, cannot update wallets.");
-        return false;
-    }
-
-    try {
-        const response = await fetch(UPDATE_WALLETS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                telegramUserId: userId,
-                wallets: walletsArray
-            }),
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        if (!data.success) throw new Error(`Failed to update wallets: ${data.error}`);
-        
-        console.log("Wallets successfully updated in database");
-        return true;
-    } catch (error) {
-        console.error("Error updating wallets:", error);
-        toast.error("Ошибка обновления кошельков в базе данных");
-        return false;
-    }
+  const handleWatchAd = () => {
+    console.log("Показ рекламы");
   };
 
-  // Загрузка подключенных кошельков
-  const loadConnectedWallets = () => {
-    const wallets = walletService.getConnectedWallets();
-    const currentSelectedWallet = walletService.getSelectedWallet();
-    
-    console.log("Loading connected wallets:", wallets);
-    console.log("Selected wallet:", currentSelectedWallet);
-    
-    setConnectedWallets(wallets);
-    setSelectedWallet(currentSelectedWallet);
-    setTotalBalance(walletService.getTotalBalance());
+  const handleWithdraw = () => {
+    console.log("Вывод средств:", withdrawAmount);
   };
 
-  // Загрузка при монтировании
-  useEffect(() => {
-    loadConnectedWallets();
-  }, []);
+  const balance = userData?.balance || '0.000';
+  const totalAdsWatched = userData?.total_ads_watched || 0;
+  const weeklyAdsWatched = userData?.weekly_ads_watched || 0;
 
-  // Обработка подключения TON
-  useEffect(() => {
-    const handleTONConnection = async () => {
-      if (tonAddress) {
-        console.log("TON connected:", tonAddress);
-        try {
-          await walletService.updateWallet('ton', { address: tonAddress });
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          loadConnectedWallets();
-          toast.success("TON кошелек подключен");
-        } catch (error) {
-          console.error("Ошибка подключения TON:", error);
-          toast.error(`Ошибка подключения TON: ${error.message}`);
-        }
-      }
-    };
-
-    handleTONConnection();
-  }, [tonAddress]);
-
-  const handleSelectWallet = () => {
-    setShowWalletSelector(true);
+  // Тексты в зависимости от языка
+  const texts = {
+    watchAd: userLanguage !== 'ru' ? 'Watch Ad' : 'Смотреть рекламу',
+    withdraw: userLanguage !== 'ru' ? 'Withdraw' : 'Вывести',
+    totalViews: userLanguage !== 'ru' ? 'Total Views' : 'Всего просмотров',
+    weeklyViews: userLanguage !== 'ru' ? 'This Week' : 'За неделю',
+    howItWorks: userLanguage !== 'ru' ? 'How it works?' : 'Как это работает?',
+    howItWorksText: userLanguage !== 'ru' 
+      ? '• Watch ads and earn 0.001 USDT per view<br/>• Minimum withdrawal: 1 USDT<br/>• Withdraw to your TON wallet'
+      : '• Смотрите рекламу и получайте 0.001 USDT за каждый просмотр<br/>• Минимальная сумма для вывода: 1 USDT<br/>• Выводите средства на свой TON кошелек',
+    balance: userLanguage !== 'ru' ? 'Balance' : 'Баланс'
   };
-
-  const handleScanQR = () => {
-    setShowQRScanner(true);
-    toast.info("Сканирование QR-кода");
-  };
-
-  const handleConnectWallet = () => {
-    setShowConnectWallet(true);
-  };
-
-  const handleWalletConnection = async (blockchain) => {
-    try {
-      switch (blockchain) {
-        case 'ethereum':
-          console.log("Connecting Ethereum via MetaMask");
-          const ethWallet = await walletService.connectEthereum();
-          await walletService.updateWallet('ethereum', ethWallet);
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          toast.success("Ethereum кошелек подключен");
-          loadConnectedWallets();
-          break;
-          
-        case 'solana':
-          console.log("Connecting Solana via Phantom");
-          const solWallet = await walletService.connectSolana();
-          await walletService.updateWallet('solana', solWallet);
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          toast.success("Solana кошелек подключен");
-          loadConnectedWallets();
-          break;
-          
-        case 'tron':
-          console.log("Connecting Tron via TronLink");
-          const tronWallet = await walletService.connectTron();
-          await walletService.updateWallet('tron', tronWallet);
-          await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-          toast.success("Tron кошелек подключен");
-          loadConnectedWallets();
-          break;
-          
-        case 'ton':
-          console.log("Connecting TON wallet");
-          tonConnectUI.openModal();
-          break;
-          
-        case 'bitcoin':
-          console.log("Bitcoin - not implemented");
-          toast.info("Bitcoin подключение временно недоступно");
-          break;
-          
-        default:
-          throw new Error(`Неподдерживаемый блокчейн: ${blockchain}`);
-      }
-    } catch (error) {
-      console.error("Connection error:", error);
-      toast.error(`Ошибка подключения: ${error.message}`);
-    }
-  };
-
-  const handleDisconnectWallet = async (walletId) => {
-    const wallet = connectedWallets.find(w => w.id === walletId);
-    
-    if (wallet) {
-      switch (wallet.blockchain) {
-        case 'ton':
-          tonConnectUI.disconnect();
-          break;
-        case 'ethereum':
-          // Для Ethereum просто удаляем из хранилища
-          break;
-        case 'solana':
-          // Для Solana просто удаляем из хранилища  
-          break;
-        case 'tron':
-          // Для Tron просто удаляем из хранилища
-          break;
-      }
-    }
-    
-    walletService.disconnectWallet(walletId);
-    await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-    toast.info("Кошелек отключен");
-    loadConnectedWallets();
-  };
-
-  const handleWalletSelection = async (walletId) => {
-    const success = walletService.setSelectedWallet(walletId);
-    if (success) {
-      setSelectedWallet(walletService.getSelectedWallet());
-      await updateWalletsInDatabase(walletService.getWalletsForDatabase());
-      loadConnectedWallets();
-    }
-  };
-
-  // Периодическая проверка состояния кошельков
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadConnectedWallets();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
-    <div className="app-container">
-      <div className="black">
-        <WalletHeader 
-          onSelectWallet={handleSelectWallet}
-          onScanQR={handleScanQR}
-          avatar={userData?.avatar}
-          firstName={userData?.first_name}
-          username={userData?.username}
-          telegramUserId={userData?.telegram_user_id}
-        />
+    <div className="wallet-container">
+      <UserHeader userData={userData} updateUserData={updateUserData} userLanguage={userLanguage} />
 
-        <BalanceDisplay 
-          balance={totalBalance} 
-          onConnectWallet={handleConnectWallet}
-          userData={userData}
-        />
+      <div className="wallet-content">
+        <div className="wallet-balance-section">
+          <div className="wallet-balance-display">
+            <img src="/usdt.svg" alt="USDT" className="wallet-usdt-icon" />
+            <span className="wallet-balance-amount">{balance}</span>
+            <span className="wallet-balance-currency">USDT</span>
+          </div>
+        </div>
+
+        <div className="wallet-stats-section">
+          <div className="wallet-stats-container">
+            <div className="wallet-stat-card">
+              <div className="wallet-stat-value">{totalAdsWatched}</div>
+              <div className="wallet-stat-label">{texts.totalViews}</div>
+            </div>
+            <div className="wallet-stat-card">
+              <div className="wallet-stat-value">{weeklyAdsWatched}</div>
+              <div className="wallet-stat-label">{texts.weeklyViews}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="wallet-info-section">
+          <div className="wallet-info-card">
+            <div className="wallet-info-title">{texts.howItWorks}</div>
+            <div 
+              className="wallet-info-text" 
+              dangerouslySetInnerHTML={{ __html: texts.howItWorksText }}
+            />
+          </div>
+        </div>
       </div>
 
-      <WalletList 
-        connectedWallets={connectedWallets}
-        selectedWallet={selectedWallet}
-        onDisconnectWallet={handleDisconnectWallet}
-        userData={userData}
-      />
-
-      <div className="safe-area-bottom" />
-
-      <WalletSelector
-        open={showWalletSelector}
-        onOpenChange={setShowWalletSelector}
-        connectedWallets={connectedWallets}
-        selectedWallet={selectedWallet}
-        onSelect={handleWalletSelection}
-        userData={userData}
-      />
-
-      <ConnectWalletModal
-        open={showConnectWallet}
-        onOpenChange={setShowConnectWallet}
-        onConnectWallet={handleWalletConnection}
-        connectedWallets={connectedWallets}
-        userData={userData}
-      />
-
-      <QRScanner
-        open={showQRScanner}
-        onOpenChange={setShowQRScanner}
-        userData={userData}
-      />
-
-      <Toaster 
-        position="top-center"
-        toastOptions={{
-          className: 'sonner-toast',
-          duration: 3000,
-        }}
-      />
-
-      <Menu userData={userData} />
+      <div className="wallet-bottom-section">
+        <div className="wallet-buttons-section">
+          <button 
+            className="wallet-withdraw-button"
+            onClick={handleWithdraw}
+            disabled={!withdrawAmount || !userFriendlyAddress}
+          >
+            {texts.withdraw}
+          </button>
+          <button className="wallet-watch-ad-button" onClick={handleWatchAd}>
+            {texts.watchAd}
+          </button>
+        </div>
+        <Menu />
+      </div>
     </div>
   );
 }

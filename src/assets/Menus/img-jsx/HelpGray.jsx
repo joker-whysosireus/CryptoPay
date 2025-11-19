@@ -1,10 +1,10 @@
-import helpgray from './helpgray.svg'; 
+import FrGray from './FrGray.svg'; 
 
 function HelpGray() {
 
   return(
     <div>
-      <img src={helpgray} alt="Star" />
+      <img src={FrGray} alt="Star" />
     </div>
   );
 }

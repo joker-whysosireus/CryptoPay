@@ -1,20 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-:root {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #1c1c1d;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 * {
   margin: 0;
   padding: 0;
@@ -22,61 +5,51 @@
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #1C1C1D;
-  color: #FFFFFF;
-  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+  color: #000000;
+  line-height: 1.5;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
 #root {
-  width: 100%;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Общие стили для контейнеров */
+.container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 8px;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+/* Стили для скролла */
+::-webkit-scrollbar {
+  width: 4px;
 }
 
-button:hover {
-  border-color: #646cff;
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
 }
 
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 /* Утилитарные классы */
@@ -84,86 +57,59 @@ button:focus-visible {
   text-align: center;
 }
 
-.text-muted {
-  color: #8E8E93;
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
 }
 
 .flex {
   display: flex;
 }
 
-.items-center {
+.flex-center {
+  display: flex;
   align-items: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.justify-center {
   justify-content: center;
 }
 
-.w-full {
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.w-100 {
   width: 100%;
 }
 
-.h-full {
+.h-100 {
   height: 100%;
 }
 
-.mx-auto {
-  margin-left: auto;
-  margin-right: auto;
+/* Стили для состояний */
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.mt-4 {
-  margin-top: 16px;
-}
-
-.mb-2 {
-  margin-bottom: 8px;
-}
-
-.p-4 {
-  padding: 16px;
-}
-
-.px-5 {
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
-.py-4 {
-  padding-top: 16px;
-  padding-bottom: 16px;
-}
-
-.space-y-2 > * + * {
-  margin-top: 8px;
-}
-
-.space-y-4 > * + * {
-  margin-top: 16px;
-}
-
-.rounded-2xl {
-  border-radius: 16px;
-}
-
-.rounded-xl {
-  border-radius: 12px;
-}
-
-.mr-4 {
-  margin-right: 1rem;
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 /* Анимации */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -175,30 +121,15 @@ button:focus-visible {
   animation: fadeIn 0.3s ease-out;
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+/* Адаптивность */
+@media (max-width: 480px) {
+  .container {
+    padding: 6px;
   }
 }
 
-.slide-up {
-  animation: slideUp 0.4s ease-out;
-}
-
-/* Стили для toast уведомлений */
-.sonner-toast {
-  background: #2C2C2E !important;
-  color: #FFFFFF !important;
-  border: 1px solid #3A3A3C !important;
-  border-radius: 12px !important;
-}
-
-.sonner-toast [data-title] {
-  color: #FFFFFF !important;
-  font-weight: 500 !important;
+@media (max-width: 360px) {
+  .container {
+    padding: 4px;
+  }
 }

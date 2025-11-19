@@ -31,18 +31,11 @@ const Menu = () => {
           <Link to="/help" onClick={handleClick('/help')}>
             {currentPath === '/help' ? <HelpGreen /> : <HelpGray />}
             <span className="Name">
-              Помощь
+              Рефералы
             </span>
           </Link>
         </div>
-        <div className={`menu-item ${currentPath === '/history' ? 'active' : ''}`}>
-          <Link to="/history" onClick={handleClick('/history')}>
-            {currentPath === '/history' ? <HistoryGreen /> : <HistoryAnother />}
-            <span className="Name">
-              История
-            </span>
-          </Link>
-        </div>
+        
       </div>
   );
 };
