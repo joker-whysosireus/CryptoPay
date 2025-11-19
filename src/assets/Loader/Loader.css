@@ -7,16 +7,16 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #1C1C1D;
+  background-color: #ffffff;
   z-index: 9999;
 }
 
 .spinner {
-  border: 12px solid #2C2C2E; 
-  border-top: 12px solid #54d66d;
+  border: 12px solid #f0f0f0;
+  border-top: 12px solid #000000;
   border-radius: 50%;
-  width: 120px; 
-  height: 120px; 
+  width: 120px;
+  height: 120px;
   animation: spin 1s linear infinite;
 }
 
@@ -24,8 +24,23 @@
   0% {
     transform: rotate(0deg);
   }
-
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-height: 670px) {
+  .spinner {
+    width: 80px;
+    height: 80px;
+    border-width: 8px;
+  }
+}
+
+@media (min-height: 890px) {
+  .spinner {
+    width: 140px;
+    height: 140px;
+    border-width: 14px;
   }
 }

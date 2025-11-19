@@ -4,38 +4,26 @@ import UserHeader from '../../assets/UserHeader/UserHeader';
 import { useTonAddress } from '@tonconnect/ui-react';
 import { useState } from 'react';
 
-function Wallet({ userData, updateUserData, userLanguage }) {
+function Wallet({ userData, updateUserData }) {
   const userFriendlyAddress = useTonAddress();
   const [withdrawAmount, setWithdrawAmount] = useState(userData?.balance || '0.000');
 
   const handleWatchAd = () => {
-    console.log("Показ рекламы");
+    console.log("Showing ad");
   };
 
   const handleWithdraw = () => {
-    console.log("Вывод средств:", withdrawAmount);
+    console.log("Withdrawing funds:", withdrawAmount);
   };
 
+  // Используем данные из userData или значения по умолчанию
   const balance = userData?.balance || '0.000';
   const totalAdsWatched = userData?.total_ads_watched || 0;
   const weeklyAdsWatched = userData?.weekly_ads_watched || 0;
 
-  // Тексты в зависимости от языка
-  const texts = {
-    watchAd: userLanguage !== 'ru' ? 'Watch Ad' : 'Смотреть рекламу',
-    withdraw: userLanguage !== 'ru' ? 'Withdraw' : 'Вывести',
-    totalViews: userLanguage !== 'ru' ? 'Total Views' : 'Всего просмотров',
-    weeklyViews: userLanguage !== 'ru' ? 'This Week' : 'За неделю',
-    howItWorks: userLanguage !== 'ru' ? 'How it works?' : 'Как это работает?',
-    howItWorksText: userLanguage !== 'ru' 
-      ? '• Watch ads and earn 0.001 USDT per view<br/>• Minimum withdrawal: 1 USDT<br/>• Withdraw to your TON wallet'
-      : '• Смотрите рекламу и получайте 0.001 USDT за каждый просмотр<br/>• Минимальная сумма для вывода: 1 USDT<br/>• Выводите средства на свой TON кошелек',
-    balance: userLanguage !== 'ru' ? 'Balance' : 'Баланс'
-  };
-
   return (
     <div className="wallet-container">
-      <UserHeader userData={userData} updateUserData={updateUserData} userLanguage={userLanguage} />
+      <UserHeader userData={userData} updateUserData={updateUserData} />
 
       <div className="wallet-content">
         <div className="wallet-balance-section">
@@ -50,22 +38,23 @@ function Wallet({ userData, updateUserData, userLanguage }) {
           <div className="wallet-stats-container">
             <div className="wallet-stat-card">
               <div className="wallet-stat-value">{totalAdsWatched}</div>
-              <div className="wallet-stat-label">{texts.totalViews}</div>
+              <div className="wallet-stat-label">Total Views</div>
             </div>
             <div className="wallet-stat-card">
               <div className="wallet-stat-value">{weeklyAdsWatched}</div>
-              <div className="wallet-stat-label">{texts.weeklyViews}</div>
+              <div className="wallet-stat-label">This Week</div>
             </div>
           </div>
         </div>
 
         <div className="wallet-info-section">
           <div className="wallet-info-card">
-            <div className="wallet-info-title">{texts.howItWorks}</div>
-            <div 
-              className="wallet-info-text" 
-              dangerouslySetInnerHTML={{ __html: texts.howItWorksText }}
-            />
+            <div className="wallet-info-title">How it works?</div>
+            <div className="wallet-info-text">
+              • Watch ads and earn 0.001 USDT per view<br/>
+              • Minimum withdrawal: 1 USDT<br/>
+              • Withdraw to your TON wallet
+            </div>
           </div>
         </div>
       </div>
@@ -77,10 +66,10 @@ function Wallet({ userData, updateUserData, userLanguage }) {
             onClick={handleWithdraw}
             disabled={!withdrawAmount || !userFriendlyAddress}
           >
-            {texts.withdraw}
+            Withdraw
           </button>
           <button className="wallet-watch-ad-button" onClick={handleWatchAd}>
-            {texts.watchAd}
+            Watch Ad
           </button>
         </div>
         <Menu />

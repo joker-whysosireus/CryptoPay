@@ -4,8 +4,6 @@ import WalletGray from '../img-jsx/WalletGrey';
 import WalletGreen from '../img-jsx/WalletGreen';
 import HelpGray from '../img-jsx/HelpGray';
 import HelpGreen from '../img-jsx/HelpGreen';
-import HistoryGreen from '../img-jsx/HistoryGreen';
-import HistoryAnother from '../img-jsx/HistoryAnother';
 
 const Menu = () => {
   const location = useLocation();

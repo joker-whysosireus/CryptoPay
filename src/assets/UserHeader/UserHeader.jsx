@@ -6,6 +6,7 @@ function UserHeader({ userData, updateUserData }) {
   const userFriendlyAddress = useTonAddress();
 
   useEffect(() => {
+    // Сохраняем адрес кошелька только если есть userData
     if (userFriendlyAddress && userData?.telegram_user_id) {
       saveWalletAddress(userData.telegram_user_id, userFriendlyAddress);
     }
@@ -28,7 +29,9 @@ function UserHeader({ userData, updateUserData }) {
       
       if (result.success) {
         console.log('Wallet address saved successfully');
-        updateUserData();
+        if (updateUserData) {
+          updateUserData();
+        }
       } else {
         console.error('Error saving wallet address:', result.error);
       }
@@ -37,9 +40,9 @@ function UserHeader({ userData, updateUserData }) {
     }
   };
 
+  // Используем данные из userData или значения по умолчанию
   const avatar = userData?.avatar;
-  const firstName = userData?.first_name || 'Имя';
-  const lastName = userData?.last_name || 'Фамилия';
+  const firstName = userData?.first_name || 'User';
   const username = userData?.username || 'username';
 
   return (
@@ -49,7 +52,7 @@ function UserHeader({ userData, updateUserData }) {
           {avatar ? (
             <img 
               src={avatar} 
-              alt="Аватар" 
+              alt="Avatar" 
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.parentElement.classList.add('no-avatar');

@@ -13,7 +13,6 @@ const App = () => {
     const [userData, setUserData] = useState(null);
     const [telegramReady, setTelegramReady] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [userLanguage, setUserLanguage] = useState('ru'); // По умолчанию русский
 
     // Initialize Telegram WebApp
     useEffect(() => {
@@ -31,11 +30,6 @@ const App = () => {
             try {
                 const webApp = window.Telegram.WebApp;
                 console.log("Telegram WebApp detected, initializing...");
-                
-                // Определяем язык пользователя
-                const lang = webApp.initDataUnsafe?.user?.language_code || 'ru';
-                setUserLanguage(lang);
-                console.log("User language:", lang);
                 
                 // Отключение свайпов
                 webApp.isVerticalSwipesEnabled = false;
@@ -70,7 +64,7 @@ const App = () => {
     }, []);
 
     useEffect(() => {
-        if (['/','/help'].includes(location.pathname)) {
+        if (['/'].includes(location.pathname)) {
             document.body.classList.add('no-scroll');
         } else {
             document.body.classList.remove('no-scroll');
@@ -125,18 +119,18 @@ const App = () => {
                             console.log("App.jsx: Authentication successful");
                             setUserData(data.userData);
                         } else {
-                            console.error("App.jsx: Authentication failed");
-                            setUserData(null);
+                            console.error("App.jsx: Authentication failed, but allowing access");
+                            // Не устанавливаем userData, но все равно разрешаем доступ
                         }
                         setLoading(false);
                     })
                     .catch(error => {
                         console.error("App.jsx: Authentication error:", error);
-                        setUserData(null);
+                        // Не устанавливаем userData, но все равно разрешаем доступ
                         setLoading(false);
                     });
             } else {
-                console.warn("App.jsx: No initData available");
+                console.warn("App.jsx: No initData available, but allowing access");
                 setLoading(false);
             }
         }
@@ -146,7 +140,9 @@ const App = () => {
         try {
             const initData = window.Telegram?.WebApp?.initData || '';
             const response = await axios.post(AUTH_FUNCTION_URL, { initData });
-            setUserData(response.data.userData);
+            if (response.data.isValid) {
+                setUserData(response.data.userData);
+            }
         } catch (error) {
             console.error('Error fetching user data:', error);
         }
@@ -160,10 +156,10 @@ const App = () => {
     return (
         <Routes location={location}>
             <Route path="/" element={
-                <Wallet isActive={isActive} userData={userData} updateUserData={updateUserData} userLanguage={userLanguage} />
+                <Wallet isActive={isActive} userData={userData} updateUserData={updateUserData} />
             } />
             <Route path="/help" element={
-                <Help isActive={isActive} userData={userData} updateUserData={updateUserData} userLanguage={userLanguage} />
+                <Help isActive={isActive} userData={userData} updateUserData={updateUserData} />
             } />
         </Routes>
     );
