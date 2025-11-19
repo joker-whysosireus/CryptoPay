@@ -10,6 +10,84 @@ function Wallet({ userData, updateUserData }) {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // Вспомогательные функции внутри компонента
+  const sendWithdrawalNotification = async (userData, amount) => {
+    try {
+      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/withdraw-notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userData.telegram_user_id,
+          username: userData.username,
+          first_name: userData.first_name,
+          amount: amount,
+          timestamp: new Date().toISOString()
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send notification');
+      }
+      
+      console.log('Withdrawal notification sent to developer');
+    } catch (error) {
+      console.error('Error sending withdrawal notification:', error);
+      throw error;
+    }
+  };
+
+  const sendUserWithdrawalConfirmation = async (userData, amount) => {
+    try {
+      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/user-notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userData.telegram_user_id,
+          amount: amount,
+          timestamp: new Date().toISOString()
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send user confirmation');
+      }
+      
+      console.log('Withdrawal confirmation sent to user');
+    } catch (error) {
+      console.error('Error sending user confirmation:', error);
+      throw error;
+    }
+  };
+
+  const updateUserBalance = async (telegramUserId, amount) => {
+    try {
+      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/update-balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          telegram_user_id: telegramUserId,
+          amount: -amount,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update balance');
+      }
+      
+      console.log('User balance updated successfully');
+    } catch (error) {
+      console.error('Error updating user balance:', error);
+      throw error;
+    }
+  };
+
+  // Обработчики событий
   const handleWatchAd = () => {
     console.log("Showing ad");
   };
@@ -21,22 +99,13 @@ function Wallet({ userData, updateUserData }) {
   const handleConfirmWithdraw = async () => {
     setProcessing(true);
     try {
-      // Отправка уведомления разработчику
       await sendWithdrawalNotification(userData, withdrawAmount);
-      
-      // Отправка уведомления пользователю
       await sendUserWithdrawalConfirmation(userData, withdrawAmount);
-      
-      // Обновление баланса в базе данных
       await updateUserBalance(userData.telegram_user_id, parseFloat(withdrawAmount));
-      
-      // Обновление данных пользователя
       await updateUserData();
       
-      // Закрытие модального окна
       setIsWithdrawModalOpen(false);
       setWithdrawAmount('');
-      
     } catch (error) {
       console.error('Error processing withdrawal:', error);
     } finally {
@@ -49,20 +118,20 @@ function Wallet({ userData, updateUserData }) {
     setWithdrawAmount('');
   };
 
-  // Автоматически устанавливаем доступный баланс при открытии модального окна
+  // Эффекты
   useEffect(() => {
     if (isWithdrawModalOpen) {
       setWithdrawAmount(userData?.balance || '0.000');
     }
   }, [isWithdrawModalOpen, userData?.balance]);
 
+  // Данные для отображения
   const balance = userData?.balance || '0.000';
   const totalAdsWatched = userData?.total_ads_watched || 0;
   const weeklyAdsWatched = userData?.weekly_ads_watched || 0;
-  
-  // Проверяем, доступна ли кнопка вывода
   const isWithdrawEnabled = parseFloat(balance) >= 1 && userFriendlyAddress;
 
+  // Возвращаемая разметка
   return (
     <div className="wallet-container">
       <UserHeader userData={userData} updateUserData={updateUserData} />
@@ -117,7 +186,6 @@ function Wallet({ userData, updateUserData }) {
         <Menu />
       </div>
 
-      {/* Модальное окно вывода */}
       {isWithdrawModalOpen && (
         <div className="withdraw-modal-overlay" onClick={handleCancelWithdraw}>
           <div className="withdraw-modal" onClick={(e) => e.stopPropagation()}>
@@ -164,84 +232,5 @@ function Wallet({ userData, updateUserData }) {
     </div>
   );
 }
-
-// Функция для отправки уведомления разработчику
-const sendWithdrawalNotification = async (userData, amount) => {
-  try {
-    const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/withdraw-notification', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: userData.telegram_user_id,
-        username: userData.username,
-        first_name: userData.first_name,
-        amount: amount,
-        timestamp: new Date().toISOString()
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to send notification');
-    }
-    
-    console.log('Withdrawal notification sent to developer');
-  } catch (error) {
-    console.error('Error sending withdrawal notification:', error);
-    throw error;
-  }
-};
-
-// Функция для отправки подтверждения пользователю
-const sendUserWithdrawalConfirmation = async (userData, amount) => {
-  try {
-    const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/user-notification', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: userData.telegram_user_id,
-        amount: amount,
-        timestamp: new Date().toISOString()
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to send user confirmation');
-    }
-    
-    console.log('Withdrawal confirmation sent to user');
-  } catch (error) {
-    console.error('Error sending user confirmation:', error);
-    throw error;
-  }
-};
-
-// Функция для обновления баланса пользователя
-const updateUserBalance = async (telegramUserId, amount) => {
-  try {
-    const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/update-balance', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        telegram_user_id: telegramUserId,
-        amount: -amount, // отрицательное значение для уменьшения баланса
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to update balance');
-    }
-    
-    console.log('User balance updated successfully');
-  } catch (error) {
-    console.error('Error updating user balance:', error);
-    throw error;
-  }
-};
 
 export default Wallet;
