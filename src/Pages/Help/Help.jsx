@@ -10,7 +10,7 @@ function Help({ userData }) {
     const message = "Join this app and start earning USDT for watching ads! 🎉";
     const startAppValue = telegramUserId ? `ref_${telegramUserId}` : 'ref_default';
     
-    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/your_bot?startapp=${startAppValue}`)}&text=${encodeURIComponent(message)}`;
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(`https://t.me/watch_and_earn_usdt_bot?startapp=${startAppValue}`)}&text=${encodeURIComponent(message)}`;
     window.open(telegramUrl, '_blank');
   };
 
@@ -27,7 +27,7 @@ function Help({ userData }) {
           <div className="help-referral-icon">🎁</div>
           <div className="help-referral-title">Invite Friends</div>
           <div className="help-referral-description">
-            For each invited friend you get <span className="help-highlight">0.001 USDT</span>
+            For each invited friend you get <span className="help-highlight">0.05 USDT</span>
           </div>
         </div>
 
