@@ -26,7 +26,7 @@ const Menu = ({ onEarnClick }) => {
             </span>
           </Link>
         </div>
-        
+
         <div className={`menu-item ${currentPath === '/' ? 'active' : ''}`}>
           <Link to="/" onClick={handleClick('/')}>
               {currentPath === '/' ? <WalletGreen /> :  <WalletGray />}
@@ -45,7 +45,7 @@ const Menu = ({ onEarnClick }) => {
           >
             <LeaderGray /> {/* Замените на вашу иконку */}
             <span className="Name">
-              Soon...
+              Soon
             </span>
           </div>
         </div>
