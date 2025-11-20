@@ -4,8 +4,9 @@ import WalletGray from '../img-jsx/WalletGrey';
 import WalletGreen from '../img-jsx/WalletGreen';
 import HelpGray from '../img-jsx/HelpGray';
 import HelpGreen from '../img-jsx/HelpGreen';
+import LeaderGray from '../img-jsx/LeaderGray';
 
-const Menu = () => {
+const Menu = ({ onEarnClick }) => {
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -17,6 +18,15 @@ const Menu = () => {
 
   return (
       <div className="menu">
+        <div className={`menu-item ${currentPath === '/help' ? 'active' : ''}`}>
+          <Link to="/help" onClick={handleClick('/help')}>
+            {currentPath === '/help' ? <HelpGreen /> : <HelpGray />}
+            <span className="Name">
+              Friends
+            </span>
+          </Link>
+        </div>
+        
         <div className={`menu-item ${currentPath === '/' ? 'active' : ''}`}>
           <Link to="/" onClick={handleClick('/')}>
               {currentPath === '/' ? <WalletGreen /> :  <WalletGray />}
@@ -25,13 +35,19 @@ const Menu = () => {
               </span>
           </Link>
         </div>
-        <div className={`menu-item ${currentPath === '/help' ? 'active' : ''}`}>
-          <Link to="/help" onClick={handleClick('/help')}>
-            {currentPath === '/help' ? <HelpGreen /> : <HelpGray />}
+        
+        {/* Новый блок Earn - не переходит на страницу */}
+        <div className="menu-item earn-item">
+          <div 
+            className="menu-item-content" 
+            onClick={onEarnClick}
+            style={{ cursor: 'pointer' }}
+          >
+            <LeaderGray /> {/* Замените на вашу иконку */}
             <span className="Name">
-              Friends
+              Soon...
             </span>
-          </Link>
+          </div>
         </div>
         
       </div>
