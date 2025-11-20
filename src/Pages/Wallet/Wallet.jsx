@@ -2,69 +2,96 @@ import './Wallet.css';
 import Menu from "../../assets/Menus/Menu/Menu";
 import UserHeader from '../../assets/UserHeader/UserHeader';
 import { useTonAddress } from '@tonconnect/ui-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 function Wallet({ userData, updateUserData }) {
   const userFriendlyAddress = useTonAddress();
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [isAdLoading, setIsAdLoading] = useState(false);
+  const [adError, setAdError] = useState(null);
 
-  const handleWatchAd = () => {
-    console.log("Showing ad");
+  // Функция для начисления награды за просмотр рекламы
+  const rewardAdWatch = async (telegramUserId) => {
+    try {
+      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/watch-ad-reward', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          telegram_user_id: telegramUserId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to process ad reward');
+      }
+
+      console.log('Ad reward processed successfully:', result.reward);
+      return result;
+    } catch (error) {
+      console.error('Error processing ad reward:', error);
+      throw error;
+    }
   };
+
+  // Функция для показа рекламы
+  const showAd = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      console.log("Starting ad display...");
+      
+      // Имитация показа рекламы на 5 секунд
+      setTimeout(() => {
+        console.log("Ad completed successfully");
+        resolve();
+      }, 5000);
+    });
+  }, []);
+
+  // Обработчик показа рекламы
+  const handleWatchAd = useCallback(async () => {
+    if (isAdLoading || !userData?.telegram_user_id) return;
+    
+    setIsAdLoading(true);
+    setAdError(null);
+
+    try {
+      // Показываем рекламу
+      await showAd();
+      
+      // Начисляем награду через новую функцию
+      await rewardAdWatch(userData.telegram_user_id);
+      
+      // Обновляем данные пользователя
+      await updateUserData();
+      
+      console.log("Ad watched successfully, reward processed");
+      
+    } catch (error) {
+      console.error('Error watching ad:', error);
+      setAdError(error.message || 'Failed to process ad reward');
+    } finally {
+      setIsAdLoading(false);
+    }
+  }, [userData, updateUserData, isAdLoading, showAd]);
 
   const handleWithdrawClick = () => {
     setIsWithdrawModalOpen(true);
   };
 
   const handleConfirmWithdraw = async () => {
+    if (!withdrawAmount || parseFloat(withdrawAmount) < 1 || parseFloat(withdrawAmount) > parseFloat(userData?.balance || '0')) {
+      alert('Invalid withdrawal amount');
+      return;
+    }
+
     setProcessing(true);
+    
     try {
-      // Отправка уведомления разработчику
-      const notificationResponse = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/withdraw-notification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userData.telegram_user_id,
-          username: userData.username,
-          first_name: userData.first_name,
-          amount: withdrawAmount,
-          timestamp: new Date().toISOString()
-        }),
-      });
-
-      const notificationResult = await notificationResponse.json();
-
-      if (!notificationResponse.ok || !notificationResult.success) {
-        throw new Error(notificationResult.error || 'Failed to send notification');
-      }
-
-      console.log('Withdrawal notification sent to developer');
-
-      // Отправка уведомления пользователю
-      const userNotificationResponse = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/user-notification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userData.telegram_user_id,
-          amount: withdrawAmount,
-          timestamp: new Date().toISOString()
-        }),
-      });
-
-      const userNotificationResult = await userNotificationResponse.json();
-
-      if (!userNotificationResponse.ok || !userNotificationResult.success) {
-        throw new Error(userNotificationResult.error || 'Failed to send user confirmation');
-      }
-
-      console.log('Withdrawal confirmation sent to user');
-
       // Обновление баланса в базе данных
       const balanceResponse = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/update-balance', {
         method: 'POST',
@@ -85,6 +112,50 @@ function Wallet({ userData, updateUserData }) {
 
       console.log('User balance updated successfully');
 
+      // Отправка уведомления разработчику
+      try {
+        const notificationResponse = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/withdraw-notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userData.telegram_user_id,
+            username: userData.username,
+            first_name: userData.first_name,
+            amount: withdrawAmount,
+            timestamp: new Date().toISOString()
+          }),
+        });
+
+        if (notificationResponse.ok) {
+          console.log('Withdrawal notification sent to developer');
+        }
+      } catch (notificationError) {
+        console.error('Error sending notification:', notificationError);
+      }
+
+      // Отправка уведомления пользователю
+      try {
+        const userNotificationResponse = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/user-notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userData.telegram_user_id,
+            amount: withdrawAmount,
+            timestamp: new Date().toISOString()
+          }),
+        });
+
+        if (userNotificationResponse.ok) {
+          console.log('Withdrawal confirmation sent to user');
+        }
+      } catch (userNotificationError) {
+        console.error('Error sending user notification:', userNotificationError);
+      }
+
       // Обновление данных пользователя
       await updateUserData();
       
@@ -92,9 +163,11 @@ function Wallet({ userData, updateUserData }) {
       setIsWithdrawModalOpen(false);
       setWithdrawAmount('');
       
+      alert('Withdrawal request submitted successfully!');
+      
     } catch (error) {
       console.error('Error processing withdrawal:', error);
-      alert('Error processing withdrawal. Please try again.');
+      alert('Error processing withdrawal: ' + error.message);
     } finally {
       setProcessing(false);
     }
@@ -166,9 +239,23 @@ function Wallet({ userData, updateUserData }) {
           >
             {isWithdrawEnabled ? 'Withdraw' : `Min: 1 USDT`}
           </button>
-          <button className="wallet-watch-ad-button" onClick={handleWatchAd}>
-            Watch Ad
+          <button 
+            className={`wallet-watch-ad-button ${isAdLoading ? 'loading' : ''}`}
+            onClick={handleWatchAd}
+            disabled={isAdLoading}
+          >
+            {isAdLoading ? (
+              <div className="ad-loading-spinner">
+                <div className="spinner"></div>
+                Processing...
+              </div>
+            ) : (
+              'Watch Ad'
+            )}
           </button>
+          {adError && (
+            <div className="ad-error-message">{adError}</div>
+          )}
         </div>
         <Menu />
       </div>

@@ -346,6 +346,40 @@
   overflow: hidden;
 }
 
+/* Стили для кнопки просмотра рекламы */
+.wallet-watch-ad-button.loading {
+  background: #666666;
+  cursor: not-allowed;
+}
+
+.ad-loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ad-error-message {
+  color: #ff4444;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 5px;
+}
+
 /* Медиа-запросы для разных высот экрана */
 @media (max-height: 670px) {
   .wallet-container {
