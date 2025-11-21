@@ -4,8 +4,19 @@ import axios from 'axios';
 import Loader from './assets/Loader/Loader.jsx';
 import Help from './Pages/Help/Help.jsx';
 import Wallet from './Pages/Wallet/Wallet.jsx';
+import telegramAnalytics from '@telegram-apps/analytics'; 
 
 const AUTH_FUNCTION_URL = 'https://cryptopayappbackend.netlify.app/.netlify/functions/auth';
+
+// Initialize Telegram Analytics
+if (process.env.NODE_ENV === 'production') { 
+    telegramAnalytics.init({
+        token: 'eyJhcHBfbmFtZSI6IndhdGNoX2Vhcm4iLCJhcHBfdXJsIjoiaHR0cHM6Ly90Lm1lL3dhdGNoX2FuZF9lYXJuX3VzZHRfYXBwIiwiYXBwX2RvbWFpbiI6Imh0dHBzOi8vd2F0Y2hhbmRlYXJuLm9ubGluZSJ9!WBC9bNn3bOw0kNDX66kgVJbJg4286urnuhfqxnTknhg=',
+        appName: 'watch_earn', 
+    });
+} else {
+    console.log("Telegram Analytics SDK not initialized in development mode.");
+}
 
 const App = () => {
     const location = useLocation();
