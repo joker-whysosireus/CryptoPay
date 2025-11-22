@@ -12,9 +12,9 @@ function Boosters({ userData, updateUserData }) {
   
   // Состояние для накопленных USDT
   const [accumulatedUSDT, setAccumulatedUSDT] = useState(0);
-  const [totalHourlyEarnings, setTotalHourlyEarnings] = useState(0);
+  const [totalPerSecond, setTotalPerSecond] = useState(0);
 
-  // Список бустеров
+  // Список бустеров (без Mega)
   const boostersList = [
     {
       id: 'mini_booster',
@@ -50,13 +50,6 @@ function Boosters({ userData, updateUserData }) {
       usdtPerHour: 0.01,
       price: 1,
       dbColumn: 'ultimate_booster'
-    },
-    {
-      id: 'mega_booster',
-      name: 'Mega',
-      usdtPerHour: 0.05,
-      price: 1,
-      dbColumn: 'mega_booster'
     }
   ];
 
@@ -70,37 +63,52 @@ function Boosters({ userData, updateUserData }) {
 
     // Загружаем накопленные USDT из localStorage
     const savedUSDT = localStorage.getItem('boostersAccumulatedUSDT');
+    const lastUpdateTime = localStorage.getItem('lastBoosterUpdate');
+    
     if (savedUSDT) {
       setAccumulatedUSDT(parseFloat(savedUSDT));
     }
 
-    // Пересчитываем общий доход в час
-    const total = calculateTotalHourlyEarnings();
-    setTotalHourlyEarnings(total);
-
-    // Запускаем интервал для накопления USDT в реальном времени
-    const interval = setInterval(() => {
+    // Рассчитываем накопления за время отсутствия
+    if (lastUpdateTime) {
+      const timePassed = (Date.now() - parseInt(lastUpdateTime)) / 1000; // в секундах
+      const currentPerSecond = calculateTotalPerSecond();
+      const earnedWhileAway = timePassed * currentPerSecond;
       setAccumulatedUSDT(prev => {
-        const newValue = prev + (total / 3600);
+        const newValue = prev + earnedWhileAway;
         localStorage.setItem('boostersAccumulatedUSDT', newValue.toString());
         return newValue;
       });
+    }
+
+    // Устанавливаем интервал для накопления USDT в реальном времени
+    const interval = setInterval(() => {
+      const currentPerSecond = calculateTotalPerSecond();
+      setAccumulatedUSDT(prev => {
+        const newValue = prev + currentPerSecond;
+        localStorage.setItem('boostersAccumulatedUSDT', newValue.toString());
+        return newValue;
+      });
+      localStorage.setItem('lastBoosterUpdate', Date.now().toString());
     }, 1000);
 
     return () => clearInterval(interval);
   }, [userData]);
 
-  // Рассчитываем общий доход в час от всех активных бустеров
-  const calculateTotalHourlyEarnings = () => {
+  // Рассчитываем общий доход в секунду от всех активных бустеров
+  const calculateTotalPerSecond = () => {
     if (!userData) return 0;
     
-    let total = 0;
+    let totalPerHour = 0;
     boostersList.forEach(booster => {
       if (userData[booster.dbColumn]) {
-        total += booster.usdtPerHour;
+        totalPerHour += booster.usdtPerHour;
       }
     });
-    return total;
+    
+    const perSecond = totalPerHour / 3600;
+    setTotalPerSecond(perSecond);
+    return perSecond;
   };
 
   // Функция для создания инвойса на бустер
@@ -289,6 +297,7 @@ function Boosters({ userData, updateUserData }) {
 
       setAccumulatedUSDT(0);
       localStorage.setItem('boostersAccumulatedUSDT', '0');
+      localStorage.setItem('lastBoosterUpdate', Date.now().toString());
       
       setIsWithdrawModalOpen(false);
       
@@ -322,7 +331,7 @@ function Boosters({ userData, updateUserData }) {
               <div className="accumulated-info">
                 <div className="accumulated-amount">{accumulatedUSDT.toFixed(4)} USDT</div>
                 <div className="accumulated-label">From Boosters</div>
-                <div className="hourly-earnings">+{totalHourlyEarnings.toFixed(4)} USDT per hour</div>
+                <div className="hourly-earnings">+{(totalPerSecond * 3600).toFixed(4)} USDT per hour</div>
               </div>
             </div>
             <button 
