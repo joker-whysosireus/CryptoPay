@@ -4,6 +4,7 @@ import axios from 'axios';
 import Loader from './assets/Loader/Loader.jsx';
 import Help from './Pages/Help/Help.jsx';
 import Wallet from './Pages/Wallet/Wallet.jsx';
+import Boosters from './Pages/LeaderBoard/Boosters.jsx';
 import telegramAnalytics from '@telegram-apps/analytics'; 
 
 const AUTH_FUNCTION_URL = 'https://cryptopayappbackend.netlify.app/.netlify/functions/auth';
@@ -171,6 +172,9 @@ const App = () => {
             } />
             <Route path="/help" element={
                 <Help isActive={isActive} userData={userData} updateUserData={updateUserData} />
+            } />
+            <Route path="/boost" element={
+                <Boosters isActive={isActive} userData={userData} updateUserData={updateUserData} />
             } />
         </Routes>
     );

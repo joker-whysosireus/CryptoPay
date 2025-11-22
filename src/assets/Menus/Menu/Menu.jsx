@@ -5,6 +5,7 @@ import WalletGreen from '../img-jsx/WalletGreen';
 import HelpGray from '../img-jsx/HelpGray';
 import HelpGreen from '../img-jsx/HelpGreen';
 import LeaderGray from '../img-jsx/LeaderGray';
+import LeaderWhite from '../img-jsx/LeaderWhite';
 
 const Menu = ({ onEarnClick }) => {
   const location = useLocation();
@@ -36,19 +37,15 @@ const Menu = ({ onEarnClick }) => {
           </Link>
         </div>
         
-        {/* Новый блок Earn - не переходит на страницу */}
-        <div className="menu-item earn-item">
-          <div 
-            className="menu-item-content" 
-            onClick={onEarnClick}
-            style={{ cursor: 'pointer' }}
-          >
-            <LeaderGray /> {/* Замените на вашу иконку */}
-            <span className="Name">
-              Soon
-            </span>
-          </div>
+        <div className={`menu-item ${currentPath === '/boost' ? 'active' : ''}`}>
+          <Link to="/boost" onClick={handleClick('/boost')}>
+              {currentPath === '/boost' ? <LeaderWhite /> :  <LeaderGray />}
+              <span className="Name">
+                Boosters
+              </span>
+          </Link>
         </div>
+       
         
       </div>
   );

@@ -85,7 +85,7 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
-  // Функция для создания инвойса на буст (ОБНОВЛЕННАЯ)
+  // Функция для создания инвойса на буст
   const createBoostInvoice = async () => {
     try {
       if (!webApp) {
@@ -136,7 +136,7 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
-  // Функция для проверки платежа за буст (ОБНОВЛЕННАЯ)
+  // Функция для проверки платежа за буст
   const verifyBoostPayment = async (payload) => {
     try {
       if (!webApp) {
@@ -172,7 +172,7 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
-  // Обработчик покупки буста (ОБНОВЛЕННЫЙ)
+  // Обработчик покупки буста
   const handleBuyBoost = async () => {
     if (!webApp) {
       alert('Telegram WebApp not available');
@@ -405,15 +405,6 @@ function Wallet({ userData, updateUserData }) {
               <div className="wallet-stat-label">This Week</div>
             </div>
           </div>
-          
-          {/* Кнопка Buy Boost */}
-          <button 
-            className="wallet-boost-button"
-            onClick={() => setIsBoostModalOpen(true)}
-          >
-            <span className="boost-button-text">Buy Boost</span>
-            {hasBoost && <div className="boost-active-badge">ACTIVE</div>}
-          </button>
         </div>
 
         <div className="wallet-info-section">
@@ -431,13 +422,25 @@ function Wallet({ userData, updateUserData }) {
 
       <div className="wallet-bottom-section">
         <div className="wallet-buttons-section">
-          <button 
-            className="wallet-withdraw-button"
-            onClick={handleWithdrawClick}
-            disabled={!isWithdrawEnabled}
-          >
-            {isWithdrawEnabled ? 'Withdraw' : `Min: 1 USDT`}
-          </button>
+          {/* Горизонтальный ряд кнопок Withdraw и Buy Boost */}
+          <div className="wallet-top-buttons-row">
+            <button 
+              className="wallet-withdraw-button"
+              onClick={handleWithdrawClick}
+              disabled={!isWithdrawEnabled}
+            >
+              {isWithdrawEnabled ? 'Withdraw' : `Min: 1 USDT`}
+            </button>
+            <button 
+              className="wallet-boost-button"
+              onClick={() => setIsBoostModalOpen(true)}
+            >
+              <span className="boost-button-text">Buy Boost</span>
+              {hasBoost && <div className="boost-active-badge">ACTIVE</div>}
+            </button>
+          </div>
+          
+          {/* Кнопка Watch Ad */}
           <button 
             className={`wallet-watch-ad-button ${isAdLoading ? 'loading' : ''} ${adError ? 'error' : ''}`}
             onClick={handleWatchAd}
@@ -526,20 +529,8 @@ function Wallet({ userData, updateUserData }) {
                     <span className="feature-icon">💰</span>
                     <span className="feature-text">3x higher earnings per ad</span>
                   </div>
-                  <div className="boost-feature">
-                    <span className="feature-icon">⚡</span>
-                    <span className="feature-text">Instant activation</span>
-                  </div>
-                  <div className="boost-feature">
-                    <span className="feature-icon">🎯</span>
-                    <span className="feature-text">Permanent effect</span>
-                  </div>
                 </div>
 
-                <div className="boost-price">
-                  <span className="price-amount">1</span>
-                  <span className="price-currency">Telegram Star</span>
-                </div>
 
                 {hasBoost && (
                   <div className="boost-active-message">

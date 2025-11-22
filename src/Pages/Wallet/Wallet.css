@@ -57,7 +57,6 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  position: relative;
 }
 
 .wallet-stats-container {
@@ -87,52 +86,6 @@
 .wallet-stat-label {
   font-size: 13px;
   color: #666666;
-}
-
-/* Кнопка Buy Boost */
-.wallet-boost-button {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.wallet-boost-button:hover {
-  transform: translateY(-50%) scale(1.05);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.boost-button-text {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.boost-active-badge {
-  background: #00d26a;
-  color: white;
-  font-size: 8px;
-  font-weight: 700;
-  padding: 2px 4px;
-  border-radius: 4px;
-  margin-top: 4px;
 }
 
 .wallet-info-section {
@@ -179,8 +132,16 @@
   gap: 10px;
 }
 
-.wallet-withdraw-button {
+/* Новый контейнер для горизонтального расположения кнопок */
+.wallet-top-buttons-row {
+  display: flex;
+  gap: 10px;
   width: 100%;
+}
+
+/* Обе кнопки теперь одинаковой ширины */
+.wallet-withdraw-button {
+  flex: 1; /* Изменено с flex: 2 на flex: 1 */
   padding: 14px;
   background: #000000;
   color: white;
@@ -190,6 +151,10 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .wallet-withdraw-button:disabled {
@@ -203,6 +168,49 @@
   background: #333333;
 }
 
+/* Кнопка Buy Boost - теперь одинаковой ширины с Withdraw */
+.wallet-boost-button {
+  flex: 1; /* Остается flex: 1 */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+}
+
+.wallet-boost-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.boost-button-text {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.boost-active-badge {
+  background: #00d26a;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
 .wallet-watch-ad-button {
   width: 100%;
   padding: 14px;
@@ -214,6 +222,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  min-height: 50px;
 }
 
 .wallet-watch-ad-button:hover {
@@ -583,9 +592,11 @@
   }
   
   .wallet-withdraw-button,
-  .wallet-watch-ad-button {
+  .wallet-watch-ad-button,
+  .wallet-boost-button {
     padding: 12px;
     font-size: 14px;
+    min-height: 45px;
   }
   
   .withdraw-modal {
@@ -596,13 +607,8 @@
     max-height: 60vh;
   }
   
-  .wallet-boost-button {
-    height: 70px;
-    padding: 6px 10px;
-  }
-  
   .boost-button-text {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 
@@ -667,17 +673,28 @@
   }
   
   .wallet-withdraw-button,
-  .wallet-watch-ad-button {
+  .wallet-watch-ad-button,
+  .wallet-boost-button {
     padding: 16px;
     font-size: 16px;
-  }
-  
-  .wallet-boost-button {
-    height: 90px;
-    padding: 10px 14px;
+    min-height: 55px;
   }
   
   .boost-button-text {
-    font-size: 12px;
+    font-size: 14px;
+  }
+}
+
+/* Адаптация для очень маленьких экранов */
+@media (max-width: 320px) {
+  .wallet-top-buttons-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .wallet-withdraw-button,
+  .wallet-boost-button {
+    flex: 1;
+    width: 100%;
   }
 }

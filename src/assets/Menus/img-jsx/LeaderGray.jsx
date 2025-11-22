@@ -1,10 +1,10 @@
-import Lgray from './Lgray.svg'; 
+import Rgray from './Rgray.svg'; 
 
 function LeaderGray() {
 
   return(
     <div>
-      <img src={Lgray} alt="Star" />
+      <img src={Rgray} alt="Star" />
     </div>
   );
 }

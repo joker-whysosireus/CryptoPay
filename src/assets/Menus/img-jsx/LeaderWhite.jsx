@@ -1,10 +1,10 @@
-import Lwhite from './Lwhite.svg'; 
+import Rwhite from './Rwhite.svg'; 
 
 function LeaderWhite() {
 
   return(
     <div>
-      <img src={Lwhite} alt="Star" />
+      <img src={Rwhite} alt="Star" />
     </div>
   );
 }
