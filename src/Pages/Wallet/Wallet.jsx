@@ -8,10 +8,13 @@ import { useAdsgram } from './hook/useAdsgram';
 function Wallet({ userData, updateUserData }) {
   const userFriendlyAddress = useTonAddress();
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [isBoostModalOpen, setIsBoostModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [processing, setProcessing] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
   const [adError, setAdError] = useState(null);
+  const [isBoostProcessing, setIsBoostProcessing] = useState(false);
+  const [boostSuccess, setBoostSuccess] = useState(false);
   const userIdRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +78,122 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
+  // Функция для создания инвойса на буст
+  const createBoostInvoice = async () => {
+    try {
+      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/create-invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: "Ad Boost",
+          description: "Increase your ad earnings from 0.01 to 0.03 USDT per view",
+          payload: JSON.stringify({
+            item_id: "ad_boost",
+            user_id: userData.telegram_user_id,
+            timestamp: Date.now()
+          }),
+          currency: "XTR",
+          prices: [{ amount: 1, label: "Boost" }]
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.invoiceLink) {
+        throw new Error(result.error || 'Failed to create invoice');
+      }
+
+      return result.invoiceLink;
+    } catch (error) {
+      console.error('Error creating boost invoice:', error);
+      throw error;
+    }
+  };
+
+  // Функция для проверки платежа за буст
+  const verifyBoostPayment = async (payload) => {
+    try {
+      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/verify-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payload: payload,
+          user_id: userData.telegram_user_id
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to verify payment');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error verifying boost payment:', error);
+      throw error;
+    }
+  };
+
+  // Обработчик покупки буста
+  const handleBuyBoost = async () => {
+    if (!window.Telegram?.WebApp) {
+      alert('Telegram WebApp not available');
+      return;
+    }
+
+    setIsBoostProcessing(true);
+    setBoostSuccess(false);
+
+    try {
+      // Создаем инвойс
+      const invoiceLink = await createBoostInvoice();
+      
+      // Открываем инвойс в Telegram
+      window.Telegram.WebApp.openInvoice(invoiceLink, async (status) => {
+        if (status === "paid") {
+          try {
+            // Проверяем платеж
+            await verifyBoostPayment(JSON.stringify({
+              item_id: "ad_boost",
+              user_id: userData.telegram_user_id,
+              timestamp: Date.now()
+            }));
+
+            // Обновляем данные пользователя
+            await updateUserData();
+            
+            setBoostSuccess(true);
+            setIsBoostProcessing(false);
+            
+            // Закрываем модальное окно через 2 секунды
+            setTimeout(() => {
+              setIsBoostModalOpen(false);
+              setBoostSuccess(false);
+            }, 2000);
+            
+          } catch (error) {
+            console.error('Error processing boost payment:', error);
+            alert('Payment verification failed: ' + error.message);
+            setIsBoostProcessing(false);
+          }
+        } else {
+          // Payment failed or cancelled
+          setIsBoostProcessing(false);
+        }
+      });
+
+    } catch (error) {
+      console.error('Error in boost purchase:', error);
+      alert('Error processing boost purchase: ' + error.message);
+      setIsBoostProcessing(false);
+    }
+  };
+
   // Колбэк при успешном просмотре рекламы
   const onRewardAd = useCallback(async () => {
     if (!userIdRef.current) {
@@ -109,7 +228,7 @@ function Wallet({ userData, updateUserData }) {
 
   // Инициализация Adsgram для USDT рекламы
   const showAdWallet = useAdsgram({ 
-    blockId: '17908', // Используем другой blockId для USDT рекламы
+    blockId: '17908',
     onReward: onRewardAd, 
     onError: onErrorAd 
   });
@@ -191,6 +310,7 @@ function Wallet({ userData, updateUserData }) {
   const balance = userData?.balance || '0.000';
   const totalAdsWatched = userData?.total_ads_watched || 0;
   const weeklyAdsWatched = userData?.weekly_ads_watched || 0;
+  const hasBoost = userData?.has_boost || false;
   
   // Проверяем, доступна ли кнопка вывода
   const isWithdrawEnabled = parseFloat(balance) >= 1 && userFriendlyAddress;
@@ -199,7 +319,7 @@ function Wallet({ userData, updateUserData }) {
   const getWatchAdButtonText = () => {
     if (isAdLoading) return 'Processing...';
     if (adError) return 'Retry';
-    return 'Watch Ad';
+    return `Watch Ad (${hasBoost ? '0.03' : '0.01'} USDT)`;
   };
 
   return (
@@ -226,15 +346,25 @@ function Wallet({ userData, updateUserData }) {
               <div className="wallet-stat-label">This Week</div>
             </div>
           </div>
+          
+          {/* Кнопка Buy Boost */}
+          <button 
+            className="wallet-boost-button"
+            onClick={() => setIsBoostModalOpen(true)}
+          >
+            <span className="boost-button-text">Buy Boost</span>
+            {hasBoost && <div className="boost-active-badge">ACTIVE</div>}
+          </button>
         </div>
 
         <div className="wallet-info-section">
           <div className="wallet-info-card">
             <div className="wallet-info-title">How it works?</div>
             <div className="wallet-info-text">
-              • Watch ads and earn 0.01 USDT per view<br/>
+              • Watch ads and earn {hasBoost ? '0.03' : '0.01'} USDT per view<br/>
               • Minimum withdrawal: 1 USDT<br/>
               • Withdraw to your TON wallet
+              {hasBoost && <><br/>• 🚀 Boost active: 3x earnings!</>}
             </div>
           </div>
         </div>
@@ -308,6 +438,75 @@ function Wallet({ userData, updateUserData }) {
                   disabled={!withdrawAmount || parseFloat(withdrawAmount) < 1 || parseFloat(withdrawAmount) > parseFloat(balance) || processing}
                 >
                   {processing ? 'Processing...' : 'Confirm Withdrawal'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно покупки буста */}
+      {isBoostModalOpen && (
+        <div className="withdraw-modal-overlay" onClick={() => setIsBoostModalOpen(false)}>
+          <div className="withdraw-modal boost-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="withdraw-modal-header">
+              <h3>Buy Ad Boost</h3>
+              <button className="close-button" onClick={() => setIsBoostModalOpen(false)}>×</button>
+            </div>
+            
+            <div className="withdraw-modal-content">
+              <div className="boost-content">
+                <div className="boost-icon">🚀</div>
+                <h4 className="boost-title">3x Ad Earnings</h4>
+                <p className="boost-description">
+                  Increase your ad earnings from <strong>0.01 USDT</strong> to <strong>0.03 USDT</strong> per view!
+                </p>
+                
+                <div className="boost-features">
+                  <div className="boost-feature">
+                    <span className="feature-icon">💰</span>
+                    <span className="feature-text">3x higher earnings per ad</span>
+                  </div>
+                  <div className="boost-feature">
+                    <span className="feature-icon">⚡</span>
+                    <span className="feature-text">Instant activation</span>
+                  </div>
+                  <div className="boost-feature">
+                    <span className="feature-icon">🎯</span>
+                    <span className="feature-text">Permanent effect</span>
+                  </div>
+                </div>
+
+                <div className="boost-price">
+                  <span className="price-amount">1</span>
+                  <span className="price-currency">Telegram Star</span>
+                </div>
+
+                {hasBoost && (
+                  <div className="boost-active-message">
+                    ✅ Boost is already active on your account!
+                  </div>
+                )}
+              </div>
+              
+              <div className="withdraw-modal-actions">
+                <button 
+                  className={`confirm-withdraw-button ${hasBoost ? 'boost-active' : ''}`}
+                  onClick={handleBuyBoost}
+                  disabled={isBoostProcessing || hasBoost}
+                >
+                  {isBoostProcessing ? (
+                    <div className="ad-loading-spinner">
+                      <div className="spinner"></div>
+                      Processing...
+                    </div>
+                  ) : boostSuccess ? (
+                    '✅ Purchased!'
+                  ) : hasBoost ? (
+                    'Boost Active 🚀'
+                  ) : (
+                    'Buy Boost for 1 Star'
+                  )}
                 </button>
               </div>
             </div>

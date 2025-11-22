@@ -5,6 +5,7 @@
   padding: 8px;
   padding-bottom: 90px;
   background: #ffffff;
+  position: relative;
 }
 
 .wallet-content {
@@ -56,6 +57,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  position: relative;
 }
 
 .wallet-stats-container {
@@ -85,6 +87,52 @@
 .wallet-stat-label {
   font-size: 13px;
   color: #666666;
+}
+
+/* Кнопка Buy Boost */
+.wallet-boost-button {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.wallet-boost-button:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.boost-button-text {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.boost-active-badge {
+  background: #00d26a;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-top: 4px;
 }
 
 .wallet-info-section {
@@ -198,6 +246,10 @@
   animation: slideUp 0.3s ease-out;
   max-height: 80vh;
   overflow-y: auto;
+}
+
+.boost-modal {
+  max-height: 70vh;
 }
 
 .withdraw-modal-header {
@@ -319,8 +371,101 @@
   background: #333333;
 }
 
+.confirm-withdraw-button.boost-active {
+  background: #00d26a;
+  cursor: not-allowed;
+}
+
 .confirm-withdraw-button:disabled.processing {
   background: #666666;
+}
+
+/* Стили для модального окна буста */
+.boost-content {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.boost-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.boost-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 12px;
+}
+
+.boost-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.boost-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.boost-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.feature-icon {
+  font-size: 20px;
+  width: 24px;
+}
+
+.feature-text {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  text-align: left;
+  flex: 1;
+}
+
+.boost-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.price-amount {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.price-currency {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.boost-active-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #c3e6cb;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
 }
 
 /* Анимации */
@@ -446,6 +591,19 @@
   .withdraw-modal {
     max-height: 70vh;
   }
+  
+  .boost-modal {
+    max-height: 60vh;
+  }
+  
+  .wallet-boost-button {
+    height: 70px;
+    padding: 6px 10px;
+  }
+  
+  .boost-button-text {
+    font-size: 10px;
+  }
 }
 
 @media (min-height: 890px) and (max-height: 940px) {
@@ -512,5 +670,14 @@
   .wallet-watch-ad-button {
     padding: 16px;
     font-size: 16px;
+  }
+  
+  .wallet-boost-button {
+    height: 90px;
+    padding: 10px 14px;
+  }
+  
+  .boost-button-text {
+    font-size: 12px;
   }
 }
