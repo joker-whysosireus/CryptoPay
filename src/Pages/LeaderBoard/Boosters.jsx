@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 function Boosters({ userData, updateUserData }) {
   const [webApp, setWebApp] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [purchaseSuccess, setPurchaseSuccess] = useState(null);
   const [selectedBooster, setSelectedBooster] = useState(null);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -15,7 +14,7 @@ function Boosters({ userData, updateUserData }) {
   const [accumulatedUSDT, setAccumulatedUSDT] = useState(0);
   const [totalHourlyEarnings, setTotalHourlyEarnings] = useState(0);
 
-  // Список бустеров с обновленными названиями
+  // Список бустеров
   const boostersList = [
     {
       id: 'mini_booster',
@@ -63,7 +62,10 @@ function Boosters({ userData, updateUserData }) {
 
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
-      setWebApp(window.Telegram.WebApp);
+      const webAppInstance = window.Telegram.WebApp;
+      setWebApp(webAppInstance);
+      webAppInstance.expand();
+      webAppInstance.enableClosingConfirmation();
     }
 
     // Загружаем накопленные USDT из localStorage
@@ -72,23 +74,34 @@ function Boosters({ userData, updateUserData }) {
       setAccumulatedUSDT(parseFloat(savedUSDT));
     }
 
+    // Пересчитываем общий доход в час
+    const total = calculateTotalHourlyEarnings();
+    setTotalHourlyEarnings(total);
+
     // Запускаем интервал для накопления USDT
     const interval = setInterval(() => {
       setAccumulatedUSDT(prev => {
-        const newValue = prev + (totalHourlyEarnings / 3600); // Добавляем за секунду
+        const newValue = prev + (total / 3600);
         localStorage.setItem('boostersAccumulatedUSDT', newValue.toString());
         return newValue;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [totalHourlyEarnings]);
-
-  // Пересчитываем общий доход в час при изменении бустеров
-  useEffect(() => {
-    const total = calculateTotalHourlyEarnings();
-    setTotalHourlyEarnings(total);
   }, [userData]);
+
+  // Рассчитываем общий доход в час от всех активных бустеров
+  const calculateTotalHourlyEarnings = () => {
+    if (!userData) return 0;
+    
+    let total = 0;
+    boostersList.forEach(booster => {
+      if (userData[booster.dbColumn]) {
+        total += booster.usdtPerHour;
+      }
+    });
+    return total;
+  };
 
   // Функция для создания инвойса на бустер
   const createBoosterInvoice = async (booster) => {
@@ -105,7 +118,7 @@ function Boosters({ userData, updateUserData }) {
       const payload = JSON.stringify({
         item_id: booster.id,
         user_id: userId.toString(),
-        booster_type: booster.id
+        timestamp: Date.now()
       });
 
       const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/create-invoice', {
@@ -175,141 +188,60 @@ function Boosters({ userData, updateUserData }) {
     }
   };
 
-  // Функция для обновления бустера в базе данных
-  const updateBoosterInDatabase = async (boosterId) => {
-    try {
-      if (!webApp) {
-        throw new Error('Telegram WebApp not initialized');
-      }
-
-      const userId = webApp.initDataUnsafe?.user?.id;
-      if (!userId) {
-        throw new Error('User ID not available');
-      }
-
-      const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/update-booster', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          telegram_user_id: userId.toString(),
-          booster_type: boosterId
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to update booster in database');
-      }
-
-      console.log('Booster updated successfully in database:', result);
-      return result;
-    } catch (error) {
-      console.error('Error updating booster in database:', error);
-      throw error;
-    }
-  };
-
   // Обработчик покупки бустера
   const handleBuyBooster = async (booster) => {
     if (!webApp) {
-      alert('Telegram WebApp not available');
+      console.error('Telegram WebApp not available');
       return;
     }
 
     setIsLoading(true);
-    setPurchaseSuccess(null);
     setSelectedBooster(booster);
 
     try {
-      // Создаем инвойс
       const invoiceLink = await createBoosterInvoice(booster);
       
-      // Открываем инвойс в Telegram
       webApp.openInvoice(invoiceLink, async (status) => {
         if (status === "paid") {
           try {
-            // Создаем payload для верификации
             const payload = JSON.stringify({
               item_id: booster.id,
               user_id: webApp.initDataUnsafe?.user?.id?.toString(),
-              booster_type: booster.id
+              timestamp: Date.now()
             });
 
-            // Проверяем платеж
             const verificationResult = await verifyBoosterPayment(payload);
             
             if (verificationResult.success) {
-              if (verificationResult.duplicate) {
-                setPurchaseSuccess('Duplicate payment detected');
-              } else if (verificationResult.alreadyOwned) {
-                setPurchaseSuccess('Booster already owned');
-              } else {
-                // Обновляем бустер в базе данных
-                await updateBoosterInDatabase(booster.id);
-                
-                setPurchaseSuccess(`${booster.name} purchased successfully!`);
-                
-                // Обновляем данные пользователя
+              // Автоматически обновляем данные пользователя после успешной покупки
+              setTimeout(async () => {
                 await updateUserData();
-              }
+              }, 1000);
             } else {
-              throw new Error('Payment verification failed');
+              console.error('Payment verification failed');
             }
             
           } catch (error) {
             console.error('Error processing booster payment:', error);
-            setPurchaseSuccess('Payment verification failed: ' + error.message);
-          }
-        } else {
-          // Payment failed or cancelled
-          if (status === "failed") {
-            setPurchaseSuccess('Payment failed. Please try again.');
-          } else if (status === "cancelled") {
-            setPurchaseSuccess('Payment cancelled.');
           }
         }
         
         setIsLoading(false);
-        
-        // Сбрасываем сообщение через 3 секунды
-        setTimeout(() => {
-          setPurchaseSuccess(null);
-          setSelectedBooster(null);
-        }, 3000);
+        setSelectedBooster(null);
       });
 
     } catch (error) {
       console.error('Error in booster purchase:', error);
-      setPurchaseSuccess('Error processing booster purchase: ' + error.message);
       setIsLoading(false);
-      
-      setTimeout(() => {
-        setPurchaseSuccess(null);
-        setSelectedBooster(null);
-      }, 3000);
+      setSelectedBooster(null);
     }
   };
 
-  // Получаем количество каждого бустера у пользователя
-  const getBoosterCount = (boosterId) => {
+  // Проверяем, есть ли у пользователя бустер
+  const hasBooster = (boosterId) => {
     const booster = boostersList.find(b => b.id === boosterId);
-    if (!booster || !userData) return 0;
-    return userData[booster.dbColumn] || 0;
-  };
-
-  // Рассчитываем общий доход в час от всех бустеров
-  const calculateTotalHourlyEarnings = () => {
-    if (!userData) return 0;
-    
-    let total = 0;
-    boostersList.forEach(booster => {
-      const count = userData[booster.dbColumn] || 0;
-      total += booster.usdtPerHour * count;
-    });
-    return total;
+    if (!booster || !userData) return false;
+    return userData[booster.dbColumn] || false;
   };
 
   // Функция для отправки уведомлений о выводе с бустеров
@@ -353,14 +285,11 @@ function Boosters({ userData, updateUserData }) {
     setProcessing(true);
     
     try {
-      // Отправка уведомлений о выводе с бустеров
       await sendBoostersWithdrawalNotification(userData, accumulatedUSDT.toFixed(4));
 
-      // Сбрасываем накопленные USDT до нуля
       setAccumulatedUSDT(0);
       localStorage.setItem('boostersAccumulatedUSDT', '0');
       
-      // Закрытие модального окна
       setIsWithdrawModalOpen(false);
       
       alert('Withdrawal request submitted successfully! Funds will be sent within a week.');
@@ -377,7 +306,6 @@ function Boosters({ userData, updateUserData }) {
     setIsWithdrawModalOpen(false);
   };
 
-  // Проверяем, доступна ли кнопка вывода
   const isWithdrawEnabled = accumulatedUSDT >= 10;
 
   return (
@@ -385,7 +313,6 @@ function Boosters({ userData, updateUserData }) {
       <UserHeader userData={userData} updateUserData={updateUserData} />
 
       <div className="boosters-content">
-        {/* Блок с накопленными USDT */}
         <div className="accumulated-section">
           <div className="accumulated-card">
             <div className="accumulated-header">
@@ -408,14 +335,13 @@ function Boosters({ userData, updateUserData }) {
           </div>
         </div>
 
-        {/* Список бустеров */}
         <div className="boosters-section">
           <h2 className="boosters-title">Available Boosters</h2>
           <p className="boosters-subtitle">Buy boosters to earn USDT automatically every hour</p>
           
           <div className="boosters-grid">
             {boostersList.map((booster) => {
-              const ownedCount = getBoosterCount(booster.id);
+              const hasActiveBooster = hasBooster(booster.id);
               const isCurrentLoading = isLoading && selectedBooster?.id === booster.id;
               
               return (
@@ -423,16 +349,16 @@ function Boosters({ userData, updateUserData }) {
                   <div className="booster-header">
                     <div className="booster-name">{booster.name}</div>
                     <button 
-                      className={`booster-buy-button ${isCurrentLoading ? 'loading' : ''} ${ownedCount > 0 ? 'purchased' : ''}`}
+                      className={`booster-buy-button ${isCurrentLoading ? 'loading' : ''} ${hasActiveBooster ? 'purchased' : ''}`}
                       onClick={() => handleBuyBooster(booster)}
-                      disabled={isLoading || ownedCount > 0}
+                      disabled={isLoading || hasActiveBooster}
                     >
                       {isCurrentLoading ? (
                         <div className="loading-spinner">
                           <div className="spinner"></div>
                           Processing...
                         </div>
-                      ) : ownedCount > 0 ? (
+                      ) : hasActiveBooster ? (
                         '✓'
                       ) : (
                         <div className="booster-price">
@@ -452,11 +378,13 @@ function Boosters({ userData, updateUserData }) {
                       <span className="earnings-period">per hour</span>
                     </div>
                     
-                    {ownedCount > 0 && (
-                      <div className="owned-count">
-                        Owned: <strong>{ownedCount}</strong>
-                      </div>
-                    )}
+                    <div className="booster-status">
+                      {hasActiveBooster ? (
+                        <div className="active-status">ACTIVE</div>
+                      ) : (
+                        <div className="inactive-status">INACTIVE</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -465,14 +393,6 @@ function Boosters({ userData, updateUserData }) {
         </div>
       </div>
 
-      {/* Сообщение о результате покупки */}
-      {purchaseSuccess && (
-        <div className="purchase-message">
-          {purchaseSuccess}
-        </div>
-      )}
-
-      {/* Модальное окно вывода с бустеров */}
       {isWithdrawModalOpen && (
         <div className="withdraw-modal-overlay" onClick={handleCancelWithdraw}>
           <div className="withdraw-modal" onClick={(e) => e.stopPropagation()}>
