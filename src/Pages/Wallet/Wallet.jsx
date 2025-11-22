@@ -16,10 +16,17 @@ function Wallet({ userData, updateUserData }) {
   const [isBoostProcessing, setIsBoostProcessing] = useState(false);
   const [boostSuccess, setBoostSuccess] = useState(false);
   const userIdRef = useRef(null);
+  const [webApp, setWebApp] = useState(null);
 
   useEffect(() => {
     userIdRef.current = userData?.telegram_user_id;
   }, [userData]);
+
+  useEffect(() => {
+    if (window.Telegram && window.Telegram.WebApp) {
+      setWebApp(window.Telegram.WebApp);
+    }
+  }, []);
 
   // Функция для начисления награды за просмотр рекламы
   const rewardAdWatch = async (telegramUserId) => {
@@ -78,9 +85,25 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
-  // Функция для создания инвойса на буст
+  // Функция для создания инвойса на буст (ОБНОВЛЕННАЯ)
   const createBoostInvoice = async () => {
     try {
+      if (!webApp) {
+        throw new Error('Telegram WebApp not initialized');
+      }
+
+      const userId = webApp.initDataUnsafe?.user?.id;
+      if (!userId) {
+        throw new Error('User ID not available');
+      }
+
+      const payload = JSON.stringify({
+        item_id: "ad_boost",
+        user_id: userId.toString()
+      });
+
+      console.log('Creating invoice with payload:', payload);
+
       const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/create-invoice', {
         method: 'POST',
         headers: {
@@ -89,11 +112,7 @@ function Wallet({ userData, updateUserData }) {
         body: JSON.stringify({
           title: "Ad Boost",
           description: "Increase your ad earnings from 0.01 to 0.03 USDT per view",
-          payload: JSON.stringify({
-            item_id: "ad_boost",
-            user_id: userData.telegram_user_id,
-            timestamp: Date.now()
-          }),
+          payload: payload,
           currency: "XTR",
           prices: [{ amount: 1, label: "Boost" }]
         }),
@@ -101,10 +120,15 @@ function Wallet({ userData, updateUserData }) {
 
       const result = await response.json();
 
-      if (!response.ok || !result.invoiceLink) {
-        throw new Error(result.error || 'Failed to create invoice');
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP error! status: ${response.status}`);
       }
 
+      if (!result.invoiceLink) {
+        throw new Error('Invoice link not received from server');
+      }
+
+      console.log('Invoice created successfully:', result.invoiceLink);
       return result.invoiceLink;
     } catch (error) {
       console.error('Error creating boost invoice:', error);
@@ -112,9 +136,18 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
-  // Функция для проверки платежа за буст
+  // Функция для проверки платежа за буст (ОБНОВЛЕННАЯ)
   const verifyBoostPayment = async (payload) => {
     try {
+      if (!webApp) {
+        throw new Error('Telegram WebApp not initialized');
+      }
+
+      const userId = webApp.initDataUnsafe?.user?.id;
+      if (!userId) {
+        throw new Error('User ID not available');
+      }
+
       const response = await fetch('https://cryptopayappbackend.netlify.app/.netlify/functions/verify-payment', {
         method: 'POST',
         headers: {
@@ -122,14 +155,14 @@ function Wallet({ userData, updateUserData }) {
         },
         body: JSON.stringify({
           payload: payload,
-          user_id: userData.telegram_user_id
+          user_id: userId.toString()
         }),
       });
 
       const result = await response.json();
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to verify payment');
+      if (!response.ok) {
+        throw new Error(result.error || `HTTP error! status: ${response.status}`);
       }
 
       return result;
@@ -139,57 +172,83 @@ function Wallet({ userData, updateUserData }) {
     }
   };
 
-  // Обработчик покупки буста
+  // Обработчик покупки буста (ОБНОВЛЕННЫЙ)
   const handleBuyBoost = async () => {
-    if (!window.Telegram?.WebApp) {
+    if (!webApp) {
       alert('Telegram WebApp not available');
       return;
     }
 
     setIsBoostProcessing(true);
     setBoostSuccess(false);
+    setAdError(null);
 
     try {
       // Создаем инвойс
       const invoiceLink = await createBoostInvoice();
       
-      // Открываем инвойс в Telegram
-      window.Telegram.WebApp.openInvoice(invoiceLink, async (status) => {
+      console.log('Opening invoice:', invoiceLink);
+      
+      // Открываем инвойс в Telegram с обработчиком статуса
+      webApp.openInvoice(invoiceLink, async (status) => {
+        console.log('Invoice status:', status);
+        
         if (status === "paid") {
           try {
-            // Проверяем платеж
-            await verifyBoostPayment(JSON.stringify({
+            // Создаем payload для верификации
+            const payload = JSON.stringify({
               item_id: "ad_boost",
-              user_id: userData.telegram_user_id,
-              timestamp: Date.now()
-            }));
+              user_id: webApp.initDataUnsafe?.user?.id?.toString()
+            });
 
-            // Обновляем данные пользователя
-            await updateUserData();
+            // Проверяем платеж
+            const verificationResult = await verifyBoostPayment(payload);
             
-            setBoostSuccess(true);
-            setIsBoostProcessing(false);
-            
-            // Закрываем модальное окно через 2 секунды
-            setTimeout(() => {
-              setIsBoostModalOpen(false);
-              setBoostSuccess(false);
-            }, 2000);
+            if (verificationResult.success) {
+              if (verificationResult.duplicate) {
+                console.log('Duplicate payment detected');
+              } else if (verificationResult.alreadyOwned) {
+                console.log('Boost already owned');
+              } else {
+                console.log('Payment verified successfully');
+              }
+
+              // Обновляем данные пользователя
+              await updateUserData();
+              
+              setBoostSuccess(true);
+              setIsBoostProcessing(false);
+              
+              // Закрываем модальное окно через 2 секунды
+              setTimeout(() => {
+                setIsBoostModalOpen(false);
+                setBoostSuccess(false);
+              }, 2000);
+              
+            } else {
+              throw new Error('Payment verification failed');
+            }
             
           } catch (error) {
             console.error('Error processing boost payment:', error);
-            alert('Payment verification failed: ' + error.message);
+            setAdError('Payment verification failed: ' + error.message);
             setIsBoostProcessing(false);
           }
         } else {
           // Payment failed or cancelled
+          console.log('Payment status:', status);
           setIsBoostProcessing(false);
+          if (status === "failed") {
+            setAdError('Payment failed. Please try again.');
+          } else if (status === "cancelled") {
+            setAdError('Payment cancelled.');
+          }
         }
       });
 
     } catch (error) {
       console.error('Error in boost purchase:', error);
-      alert('Error processing boost purchase: ' + error.message);
+      setAdError('Error processing boost purchase: ' + error.message);
       setIsBoostProcessing(false);
     }
   };
@@ -508,6 +567,9 @@ function Wallet({ userData, updateUserData }) {
                     'Buy Boost for 1 Star'
                   )}
                 </button>
+                {adError && (
+                  <div className="ad-error-message" style={{marginTop: '10px'}}>{adError}</div>
+                )}
               </div>
             </div>
           </div>
