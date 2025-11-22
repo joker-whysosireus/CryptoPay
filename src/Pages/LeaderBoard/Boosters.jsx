@@ -78,7 +78,7 @@ function Boosters({ userData, updateUserData }) {
     const total = calculateTotalHourlyEarnings();
     setTotalHourlyEarnings(total);
 
-    // Запускаем интервал для накопления USDT
+    // Запускаем интервал для накопления USDT в реальном времени
     const interval = setInterval(() => {
       setAccumulatedUSDT(prev => {
         const newValue = prev + (total / 3600);
