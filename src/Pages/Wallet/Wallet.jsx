@@ -114,7 +114,7 @@ function Wallet({ userData, updateUserData }) {
           description: "Increase your ad earnings from 0.01 to 0.03 USDT per view",
           payload: payload,
           currency: "XTR",
-          prices: [{ amount: 1, label: "Boost" }]
+          prices: [{ amount: 50, label: "Boost" }]
         }),
       });
 

@@ -20,35 +20,35 @@ function Boosters({ userData, updateUserData }) {
       id: 'mini_booster',
       name: 'Mini',
       usdtPerHour: 0.0001,
-      price: 1,
+      price: 100,
       dbColumn: 'mini_booster'
     },
     {
       id: 'basic_booster',
       name: 'Basic',
       usdtPerHour: 0.0005,
-      price: 1,
+      price: 125,
       dbColumn: 'basic_booster'
     },
     {
       id: 'advanced_booster', 
       name: 'Advanced',
       usdtPerHour: 0.001,
-      price: 1,
+      price: 249,
       dbColumn: 'advanced_booster'
     },
     {
       id: 'pro_booster',
       name: 'Pro',
       usdtPerHour: 0.005,
-      price: 1,
+      price: 299,
       dbColumn: 'pro_booster'
     },
     {
       id: 'ultimate_booster',
       name: 'Ultimate',
       usdtPerHour: 0.01,
-      price: 1,
+      price: 1000,
       dbColumn: 'ultimate_booster'
     }
   ];
