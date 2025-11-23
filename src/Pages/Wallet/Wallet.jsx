@@ -555,7 +555,7 @@ function Wallet({ userData, updateUserData }) {
                   ) : hasBoost ? (
                     'Boost Active 🚀'
                   ) : (
-                    'Buy Boost for 1 Star'
+                    'Buy Boost for 50 Star'
                   )}
                 </button>
                 {adError && (
